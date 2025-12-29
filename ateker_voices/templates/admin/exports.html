@@ -1,0 +1,278 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Export Management - Admin Panel{% endblock %}
+
+{% block header %}Dataset Exports{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Available Datasets -->
+    <div class="col-lg-6">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Available Datasets</span>
+            </div>
+            <div class="card-body p-0">
+                {% if datasets %}
+                <div class="list-group list-group-flush">
+                    {% for dataset in datasets %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">
+                                    {{ dataset.language|upper }}
+                                    <span class="badge bg-primary ms-2">{{ dataset.recordings_count }} recordings</span>
+                                </h6>
+                                <small class="text-muted">
+                                    Last modified: {{ dataset.last_modified }}
+                                </small>
+                            </div>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" 
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                    Export
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <form method="POST" action="{{ url_for('admin.create_export') }}" class="d-inline">
+                                            <input type="hidden" name="language" value="{{ dataset.language }}">
+                                            <input type="hidden" name="format" value="zip">
+                                            <button type="submit" class="dropdown-item">
+                                                <i class="bi bi-file-earmark-zip me-2"></i>ZIP Archive
+                                            </button>
+                                        </form>
+                                    </li>
+                                    <li>
+                                        <form method="POST" action="{{ url_for('admin.create_export') }}" class="d-inline">
+                                            <input type="hidden" name="language" value="{{ dataset.language }}">
+                                            <input type="hidden" name="format" value="csv">
+                                            <button type="submit" class="dropdown-item">
+                                                <i class="bi bi-filetype-csv me-2"></i>CSV
+                                            </button>
+                                        </form>
+                                    </li>
+                                    <li>
+                                        <form method="POST" action="{{ url_for('admin.create_export') }}" class="d-inline">
+                                            <input type="hidden" name="language" value="{{ dataset.language }}">
+                                            <input type="hidden" name="format" value="json">
+                                            <button type="submit" class="dropdown-item">
+                                                <i class="bi bi-filetype-json me-2"></i>JSON
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="p-4 text-center text-muted">
+                    <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                    <p class="mt-2 mb-0">No datasets available for export.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Export Options -->
+        <div class="card">
+            <div class="card-header">
+                Custom Export
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('admin.create_export') }}" class="needs-validation" novalidate>
+                    <div class="mb-3">
+                        <label for="exportLanguage" class="form-label">Language</label>
+                        <select class="form-select" id="exportLanguage" name="language" required>
+                            <option value="" selected disabled>Select a language</option>
+                            {% for dataset in datasets %}
+                            <option value="{{ dataset.language }}">
+                                {{ dataset.language|upper }} ({{ dataset.recordings_count }} recordings)
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="invalid-feedback">
+                            Please select a language.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Export Format</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="format" id="formatZip" value="zip" checked>
+                            <label class="form-check-label" for="formatZip">
+                                <i class="bi bi-file-earmark-zip"></i> ZIP Archive (audio + metadata)
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="format" id="formatCsv" value="csv">
+                            <label class="form-check-label" for="formatCsv">
+                                <i class="bi bi-filetype-csv"></i> CSV (metadata only)
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="format" id="formatJson" value="json">
+                            <label class="form-check-label" for="formatJson">
+                                <i class="bi bi-filetype-json"></i> JSON (metadata only)
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="includeMetadata" name="include_metadata" checked>
+                            <label class="form-check-label" for="includeMetadata">
+                                Include metadata files
+                            </label>
+                            <div class="form-text">Includes validation and metadata JSON files in the export.</div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-download"></i> Export Dataset
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Export History -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Export History</span>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                            id="exportHistoryFilter" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-funnel"></i> Filter
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="exportHistoryFilter">
+                        <li><a class="dropdown-item" href="{{ url_for('admin.export_management') }}">All Exports</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><h6 class="dropdown-header">By Format</h6></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.export_management', format='zip') }}">ZIP Archives</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.export_management', format='csv') }}">CSV Files</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.export_management', format='json') }}">JSON Files</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><h6 class="dropdown-header">By Status</h6></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.export_management', status='recent') }}">Recent</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.export_management', status='large') }}">Large Files</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                {% if exports %}
+                <div class="list-group list-group-flush">
+                    {% for export in exports %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="d-flex align-items-center mb-1">
+                                    <h6 class="mb-0">
+                                        {{ export.language|upper }} Dataset
+                                        <span class="badge bg-{{ 'success' if export.export_format == 'zip' else 'info' }} ms-1">
+                                            {{ export.export_format|upper }}
+                                        </span>
+                                    </h6>
+                                </div>
+                                <div class="small text-muted">
+                                    Exported by {{ export.user_username }} on {{ export.created_at.strftime('%b %d, %Y %H:%M') }}
+                                </div>
+                                <div class="small">
+                                    <span class="text-muted">{{ (export.file_size / 1024 / 1024)|round(2) }} MB</span>
+                                    <span class="mx-1">•</span>
+                                    <span class="text-muted">{{ export.record_count or 'N/A' }} recordings</span>
+                                </div>
+                            </div>
+                            <div class="btn-group">
+                                <a href="{{ url_for('admin.download_export', export_id=export.id) }}" 
+                                   class="btn btn-sm btn-outline-primary"
+                                   data-bs-toggle="tooltip" 
+                                   title="Download">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                                <button type="button" 
+                                        class="btn btn-sm btn-outline-secondary"
+                                        data-bs-toggle="tooltip" 
+                                        title="Copy download link">
+                                    <i class="bi bi-link-45deg"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="p-4 text-center text-muted">
+                    <i class="bi bi-clock-history" style="font-size: 2rem;"></i>
+                    <p class="mt-2 mb-0">No export history found.</p>
+                </div>
+                {% endif %}
+            </div>
+            {% if exports|length > 10 %}
+            <div class="card-footer bg-transparent">
+                <nav aria-label="Export history pagination">
+                    <ul class="pagination pagination-sm justify-content-center mb-0">
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+                        </li>
+                        <li class="page-item active" aria-current="page">
+                            <a class="page-link" href="#">1</a>
+                        </li>
+                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="page-link" href="#">3</a></li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Form validation
+    var forms = document.querySelectorAll('.needs-validation');
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+    
+    // Copy download link to clipboard
+    document.querySelectorAll('[data-bs-toggle="tooltip"][title="Copy download link"]').forEach(function(button) {
+        button.addEventListener('click', function() {
+            // In a real implementation, this would copy the actual download link
+            // For now, we'll just show a tooltip
+            var tooltip = bootstrap.Tooltip.getInstance(button);
+            var originalTitle = button.getAttribute('data-bs-original-title');
+            
+            // Show "Copied!" feedback
+            button.setAttribute('data-bs-original-title', 'Copied!');
+            tooltip.show();
+            
+            // Reset after a delay
+            setTimeout(function() {
+                button.setAttribute('data-bs-original-title', originalTitle);
+            }, 2000);
+        });
+    });
+});
+</script>
+{% endblock %}

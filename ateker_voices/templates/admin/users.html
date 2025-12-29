@@ -1,0 +1,152 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}User Management - Admin Panel{% endblock %}
+
+{% block header %}User Management{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>All Users</span>
+        <a href="{{ url_for('admin.create_user') }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-lg"></i> Add User
+        </a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Joined</th>
+                        <th>Last Login</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0 me-2">
+                                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" 
+                                         style="width: 32px; height: 32px;">
+                                        <i class="bi bi-person-fill text-muted"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    {{ user.username }}
+                                    {% if user.is_admin %}
+                                    <span class="badge bg-primary ms-1">Admin</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ user.email or '-' }}</td>
+                        <td>
+                            {% if user.is_admin %}
+                            <span class="badge bg-primary">Administrator</span>
+                            {% else %}
+                            <span class="badge bg-secondary">User</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else 'Never' }}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" 
+                                   class="btn btn-outline-primary"
+                                   data-bs-toggle="tooltip" 
+                                   title="Edit User">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                {% if user.id != current_user.id %}
+                                <button type="button" 
+                                        class="btn btn-outline-danger"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#deleteUserModal"
+                                        data-user-id="{{ user.id }}"
+                                        data-username="{{ user.username }}"
+                                        title="Delete User">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                                {% else %}
+                                <button type="button" 
+                                        class="btn btn-outline-secondary"
+                                        disabled
+                                        title="Cannot delete your own account">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <div class="text-muted">No users found.</div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer bg-transparent">
+        <small class="text-muted">Showing {{ users|length }} user(s)</small>
+    </div>
+</div>
+
+<!-- Delete User Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteUserModalLabel">Confirm Deletion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete user <strong id="deleteUserName"></strong>?</p>
+                <p class="text-danger">This action cannot be undone. All recordings and data associated with this user will be permanently deleted.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteUserForm" method="POST" action="">
+                    <button type="submit" class="btn btn-danger">Delete User</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Handle delete user modal
+    var deleteUserModal = document.getElementById('deleteUserModal');
+    deleteUserModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        var userId = button.getAttribute('data-user-id');
+        var username = button.getAttribute('data-username');
+        
+        var modalTitle = deleteUserModal.querySelector('.modal-title');
+        var userNameElement = deleteUserModal.querySelector('#deleteUserName');
+        var deleteForm = deleteUserModal.querySelector('#deleteUserForm');
+        
+        userNameElement.textContent = username;
+        deleteForm.action = "{{ url_for('admin.delete_user', user_id=0) }}".replace('0', userId);
+    });
+});
+</script>
+{% endblock %}

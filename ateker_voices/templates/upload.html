@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <meta name="description" content="Upload dataset - Ateker Voices">
+        <meta name="author" content="Ateker Voices">
+
+        <title>Upload Dataset - Ateker Voices</title>
+        <link href="css/bootstrap.min.css" rel="stylesheet">
+        <link href="css/fontawesome-all.min.css" rel="stylesheet">
+        <style>
+            body {
+                background: #f8f9fa;
+                color: #333;
+            }
+            .navbar {
+                background: #ffffff !important;
+            }
+            .navbar-brand {
+                color: #333 !important;
+            }
+            .btn-success {
+                background: #d0630e !important;
+                border-color: #d0630e !important;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            {% include 'components/admin_header.html' %}
+        </header>
+        <div class="container-fluid mt-3">
+            <div class="row-fluid">
+                <p style="color: #333;">
+                    All data submitted to this platform is used to preserve Ateker languages and help communities maintain their linguistic heritage.
+                </p>
+            </div>
+
+            <div class="row-fluid">
+                <form method="post" action="dataset" enctype="multipart/form-data">
+                    <input type="hidden" name="language" value="{{ language }}">
+                    <input type="hidden" name="userId" value="{{ user_id }}">
+
+                    <input id="dataset" name="dataset" type="file" class="form-control mb-3">
+                    <button class="btn btn-success">Upload</button>
+                </form>
+            </div>
+        </div>
+    </body>
+</html>

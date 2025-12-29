@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <meta name="description" content="Admin interface for Ateker Voices">
+        <meta name="author" content="Ateker Voices">
+
+        <title>Admin - Ateker Voices</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/fontawesome-all.min.css" rel="stylesheet">
+        <style>
+            body {
+                background: #f8f9fa;
+                color: #333;
+            }
+            .navbar {
+                background: #ffffff !important;
+            }
+            .navbar-brand {
+                color: #333 !important;
+            }
+            .card {
+                border: 1px solid #e0e0e0;
+            }
+            .card-title {
+                color: #333;
+            }
+            .btn-primary {
+                background: #d0630e !important;
+                border-color: #d0630e !important;
+            }
+            .btn-secondary {
+                background: #6c757d !important;
+                border-color: #6c757d !important;
+            }
+            .text-primary {
+                color: #d0630e !important;
+            }
+            .alert-info {
+                background: #d1ecf1 !important;
+                border-color: #bee5eb !important;
+                color: #0c5460 !important;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            {% include 'components/admin_header.html' %}
+        </header>
+        
+        <div class="container-fluid mt-4">
+            <div class="row">
+                <div class="col-md-8 mx-auto">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-cogs mr-2"></i>Administration</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="card border-primary">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-4x fa-list-alt text-primary mb-3"></i>
+                                            <h5 class="card-title">Manage Prompts</h5>
+                                            <p class="card-text">Add, edit, and organize recording prompts for different languages</p>
+                                            <a href="/admin/prompts" class="btn btn-primary">
+                                                <i class="fas fa-edit mr-1"></i>Manage Prompts
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <div class="card border-info">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-4x fa-clipboard-check text-info mb-3"></i>
+                                            <h5 class="card-title">Data Validation</h5>
+                                            <p class="card-text">Review and validate recorded audio data for quality control</p>
+                                            <a href="/admin/validation" class="btn btn-primary">
+                                                <i class="fas fa-check-circle mr-1"></i>Validate Data
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle mr-2"></i>
+                                        <strong>About Ateker Voices:</strong> This platform is designed to collect voice recordings for Ateker languages to help preserve and digitize these important cultural assets.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mt-3">
+                                <div class="col-12 text-center">
+                                    <a href="/" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left mr-1"></i>Back to Recording
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

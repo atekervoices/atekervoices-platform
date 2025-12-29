@@ -1,14 +1,25 @@
-FROM python:3.9
+# Base image
+FROM python:3.9-slim-bullseye
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app
 
 WORKDIR /app
-COPY ./requirements.txt ./
 
-RUN python3 -m venv .venv && \
-    .venv/bin/pip3 install --no-cache-dir --upgrade pip && \
-    .venv/bin/pip3 install --no-cache-dir -r requirements.txt
+# Copy requirements first to leverage Docker cache
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-COPY ./ ./
+# Copy the application code
+COPY . .
 
+# Create necessary directories
+RUN mkdir -p /app/output /data
+
+# Expose port
 EXPOSE 8000
 
-ENTRYPOINT ["/app/.venv/bin/python3", "-m", "piper_recording_studio", "--host", "0.0.0.0"]
+# Command to run the application
+CMD ["python", "-m", "ateker_voices"]

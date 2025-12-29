@@ -1,0 +1,150 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Dashboard - Admin Panel{% endblock %}
+
+{% block header %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Stats Cards -->
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="stat-value">{{ stats.total_users }}</div>
+                <div class="stat-label">Total Users</div>
+                <div class="text-muted small mt-1"><i class="bi bi-arrow-up text-success"></i> 12% from last month</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="stat-value">{{ stats.total_recordings }}</div>
+                <div class="stat-label">Total Recordings</div>
+                <div class="text-muted small mt-1"><i class="bi bi-arrow-up text-success"></i> 5.2% from last week</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="stat-value">{{ stats.validated_recordings }}</div>
+                <div class="stat-label">Validated</div>
+                <div class="text-muted small mt-1">{{ ((stats.validated_recordings / stats.total_recordings) * 100 if stats.total_recordings > 0 else 0)|round(1) }}% of total</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="stat-value">{{ stats.pending_recordings }}</div>
+                <div class="stat-label">Pending Review</div>
+                <div class="text-muted small mt-1">{{ ((stats.pending_recordings / stats.total_recordings) * 100 if stats.total_recordings > 0 else 0)|round(1) }}% of total</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <!-- Recent Exports -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Recent Exports</span>
+                <a href="{{ url_for('admin.export_management') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for export in recent_exports %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-0">{{ export.language|upper }} Dataset</h6>
+                                <small class="text-muted">{{ export.created_at.strftime('%b %d, %Y %H:%M') }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-{{ 'success' if export.export_format == 'zip' else 'info' }}">
+                                    {{ export.export_format|upper }}
+                                </span>
+                                <div class="text-muted small">{{ (export.file_size / 1024 / 1024)|round(2) }} MB</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="p-3 text-center text-muted">
+                        No recent exports found.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Users -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Recent Users</span>
+                <a href="{{ url_for('admin.user_management') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for user in recent_users %}
+                    <div class="list-group-item">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                    <i class="bi bi-person-fill text-muted"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-0">
+                                    {{ user.username }}
+                                    {% if user.is_admin %}
+                                    <span class="badge bg-primary ms-2">Admin</span>
+                                    {% endif %}
+                                </h6>
+                                <small class="text-muted">Joined {{ user.created_at.strftime('%b %d, %Y') }}</small>
+                            </div>
+                            <div class="text-end">
+                                <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="p-3 text-center text-muted">
+                        No users found.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <!-- Quick Actions -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                Quick Actions
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ url_for('admin.create_user') }}" class="btn btn-primary">
+                        <i class="bi bi-person-plus"></i> Add New User
+                    </a>
+                    <a href="{{ url_for('admin.export_management') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-download"></i> Export Dataset
+                    </a>
+                    <a href="{{ url_for('admin.recording_management') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-mic"></i> Review Recordings
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

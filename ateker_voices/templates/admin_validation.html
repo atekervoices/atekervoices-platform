@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Data Validation - Ateker Voices</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/fontawesome-all.min.css" rel="stylesheet">
+
+        <style>
+            body {
+                background: #f8f9fa;
+                color: #333;
+            }
+            .navbar {
+                background: #ffffff !important;
+            }
+            .navbar-brand {
+                color: #333 !important;
+            }
+            .card {
+                border: 1px solid #e0e0e0;
+            }
+            .card-title {
+                color: #333;
+            }
+            .btn-primary {
+                background: #d0630e !important;
+                border-color: #d0630e !important;
+            }
+            .btn-secondary {
+                background: #6c757d !important;
+                border-color: #6c757d !important;
+            }
+            .text-primary {
+                color: #d0630e !important;
+            }
+            .alert-info {
+                background: #d1ecf1 !important;
+                border-color: #bee5eb !important;
+                color: #0c5460 !important;
+            }
+            .text-success {
+                color: #28a745 !important;
+            }
+            .status-badge {
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 0.8em;
+            }
+            .status-pending {
+                background: #ffc107;
+                color: #212529;
+            }
+            .status-approved {
+                background: #28a745;
+                color: white;
+            }
+            .status-rejected {
+                background: #dc3545;
+                color: white;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            {% include 'components/admin_header.html' %}
+        </header>
+
+        <main class="container mt-4">
+            <div class="row">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2><i class="fas fa-check-circle mr-2"></i>Data Validation</h2>
+                        <a href="/admin" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left mr-1"></i>Back to Admin
+                        </a>
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-filter mr-2"></i>Filters</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label for="languageFilter">Language:</label>
+                                    <select id="languageFilter" class="form-control">
+                                        <option value="">All Languages</option>
+                                        {% for name, code in languages %}
+                                        <option value="{{ code }}">{{ name }} ({{ code }})</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="statusFilter">Status:</label>
+                                    <select id="statusFilter" class="form-control">
+                                        <option value="">All Statuses</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="approved">Approved</option>
+                                        <option value="rejected">Rejected</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="userFilter">User:</label>
+                                    <input type="text" id="userFilter" class="form-control" placeholder="Filter by user ID">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recordings Table -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-list mr-2"></i>Recordings</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped" id="validationTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Recording ID</th>
+                                            <th>Language</th>
+                                            <th>User</th>
+                                            <th>Prompt</th>
+                                            <th>Duration</th>
+                                            <th>Date</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="validationTableBody">
+                                        <!-- Data will be populated by JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div id="noDataMessage" class="text-center text-muted" style="display: none;">
+                                <i class="fas fa-inbox fa-3x mb-3"></i>
+                                <p>No recordings found matching the current filters.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Validation Modal -->
+        <div class="modal fade" id="validationModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Validate Recording</h5>
+                        <button type="button" class="close" data-dismiss="modal">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-12">
+                                <h6>Recording Details:</h6>
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td><strong>ID:</strong></td>
+                                        <td id="modalRecordingId">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Language:</strong></td>
+                                        <td id="modalLanguage">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>User:</strong></td>
+                                        <td id="modalUserId">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Prompt:</strong></td>
+                                        <td id="modalPrompt">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Duration:</strong></td>
+                                        <td id="modalDuration">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Date:</strong></td>
+                                        <td id="modalDate">-</td>
+                                    </tr>
+                                </table>
+
+                                <h6>Transcript:</h6>
+                                <div class="border p-3 mb-3 bg-light" id="transcriptText" style="max-height: 200px; overflow-y: auto;">
+                                    <!-- Transcript content will be displayed here -->
+                                </div>
+
+                                <h6>Audio Playback:</h6>
+                                <audio id="modalAudio" controls style="width: 100%;">
+                                    Your browser does not support the audio element.
+                                </audio>
+
+                                <div class="form-group mt-3">
+                                    <label for="validationNotes">Validation Notes:</label>
+                                    <textarea id="validationNotes" class="form-control" rows="3" placeholder="Optional notes about this recording..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bootstrap Alert -->
+                        <div id="alertPlaceholder" style="display: none;"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-success" id="approveBtn">
+                            <i class="fas fa-check mr-1"></i>Approve
+                        </button>
+                        <button type="button" class="btn btn-danger" id="rejectBtn">
+                            <i class="fas fa-times mr-1"></i>Reject
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bootstrap JS -->
+        <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+
+        <script>
+            let currentValidationId = null;
+            let validationData = []; // Declare globally so all functions can access it
+
+            // Simple Alert Helper Function
+            function showAlert(message, type = 'success') {
+                // For now, just use browser alert to avoid DOM timing issues
+                alert(message + '\n\nType: ' + type);
+            }
+
+            function loadValidationData() {
+                // Use real data passed from the backend
+                validationData = [
+                    {% for recording in validation_data %}
+                    {
+                        recording_id: "{{ recording.recording_id|e }}",
+                        language_name: "{{ recording.language_name|e }}",
+                        language: "{{ recording.language|e }}",
+                        user_id: "{{ recording.user_id|e }}",
+                        prompt: "{{ recording.prompt|e }}",
+                        duration: "{{ recording.duration|e }}",
+                        submitted_date: "{{ recording.submitted_date|e }}",
+                        status: "{{ recording.status|e }}",
+                        audio_path: "{{ recording.audio_path|e }}",
+                        validation_notes: "{{ recording.validation_notes|e }}",
+                        validated_by: "{{ recording.validated_by|e }}",
+                        validated_date: "{{ recording.validated_date|e }}"
+                    }{% if not loop.last %},{% endif %}
+                    {% endfor %}
+                ];
+                displayValidationData(validationData);
+            }
+
+            function displayValidationData(data) {
+                const tbody = document.getElementById('validationTableBody');
+                const noDataMsg = document.getElementById('noDataMessage');
+
+                if (data.length === 0) {
+                    tbody.innerHTML = '';
+                    noDataMsg.style.display = 'block';
+                    return;
+                }
+
+                noDataMsg.style.display = 'none';
+
+                tbody.innerHTML = data.map(recording => `
+                    <tr>
+                        <td>${recording.recording_id}</td>
+                        <td>${recording.language_name}</td>
+                        <td>${recording.user_id}</td>
+                        <td title="${recording.prompt}">
+                            ${recording.prompt.length > 50 ? recording.prompt.substring(0, 50) + '...' : recording.prompt}
+                        </td>
+                        <td>${recording.duration}</td>
+                        <td>${new Date(recording.submitted_date).toLocaleDateString()}</td>
+                        <td>
+                            <span class="status-badge status-${recording.status}">
+                                ${recording.status.charAt(0).toUpperCase() + recording.status.slice(1)}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-primary review-btn" onclick="openValidationModal('${recording.recording_id}')" data-recording-id="${recording.recording_id}">
+                                <i class="fas fa-play mr-1"></i>Review
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                // Attach event listeners to dynamically created buttons
+                setTimeout(() => {
+                    const reviewButtons = document.querySelectorAll('.review-btn');
+                    reviewButtons.forEach(button => {
+                        const recordingId = button.getAttribute('data-recording-id');
+                        button.addEventListener('click', () => {
+                            openValidationModal(recordingId);
+                        });
+                    });
+                }, 100);
+            }
+
+            function openValidationModal(recordingId) {
+                // Find the recording data from our loaded data
+                const recording = validationData.find(r => r.recording_id === recordingId);
+
+                if (!recording) {
+                    showAlert('Recording not found', 'danger');
+                    return;
+                }
+
+                // Populate modal with real data
+                document.getElementById('modalRecordingId').textContent = recording.recording_id;
+                document.getElementById('modalLanguage').textContent = recording.language_name;
+                document.getElementById('modalUserId').textContent = recording.user_id;
+                document.getElementById('modalPrompt').textContent = recording.prompt;
+                document.getElementById('modalDuration').textContent = recording.duration;
+                document.getElementById('modalDate').textContent = new Date(recording.submitted_date).toLocaleDateString();
+
+                // Set transcript text in the dedicated area
+                document.getElementById('transcriptText').textContent = recording.prompt;
+
+                // Set audio source - construct proper path
+                const audio = document.getElementById('modalAudio');
+                const audioPath = '/' + recording.audio_path;
+                audio.src = audioPath;
+
+                // Add error handling for audio loading
+                audio.onerror = function() {
+                    showAlert('Failed to load audio file. The file may not exist or may not be accessible.', 'danger');
+                };
+
+                audio.onloadeddata = function() {
+                    console.log('Audio loaded successfully');
+                };
+
+                // Clear and set notes
+                const notesField = document.getElementById('validationNotes');
+                notesField.value = recording.validation_notes || '';
+
+                currentValidationId = recordingId;
+
+                $('#validationModal').modal('show');
+            }
+
+            async function approveRecording() {
+                const notes = document.getElementById('validationNotes').value;
+
+                try {
+                    const formData = new FormData();
+                    formData.append('recording_id', currentValidationId);
+                    formData.append('status', 'approved');
+                    formData.append('notes', notes);
+
+                    const response = await fetch('/admin/validate_recording', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        showAlert('Recording approved successfully!', 'success');
+                        $('#validationModal').modal('hide');
+                        loadValidationData(); // Refresh the table
+                    } else {
+                        showAlert('Failed to approve recording', 'danger');
+                    }
+                } catch (error) {
+                    showAlert('Error approving recording: ' + error.message, 'danger');
+                }
+            }
+
+            async function rejectRecording() {
+                const notes = document.getElementById('validationNotes').value;
+
+                try {
+                    const formData = new FormData();
+                    formData.append('recording_id', currentValidationId);
+                    formData.append('status', 'rejected');
+                    formData.append('notes', notes);
+
+                    const response = await fetch('/admin/validate_recording', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        showAlert('Recording rejected successfully!', 'success');
+                        $('#validationModal').modal('hide');
+                        loadValidationData(); // Refresh the table
+                    } else {
+                        showAlert('Failed to reject recording', 'danger');
+                    }
+                } catch (error) {
+                    showAlert('Error rejecting recording: ' + error.message, 'danger');
+                }
+            }
+
+            // Event listeners
+            document.addEventListener('DOMContentLoaded', function() {
+                loadValidationData();
+
+                // Filter functionality
+                document.getElementById('languageFilter').addEventListener('change', function() {
+                    const selectedLanguage = this.value;
+                    // In a real implementation, this would filter the data
+                });
+
+                document.getElementById('statusFilter').addEventListener('change', function() {
+                    const selectedStatus = this.value;
+                    // In a real implementation, this would filter the data
+                });
+
+                // Modal buttons - use event delegation since modal might not be in DOM yet
+                document.addEventListener('click', function(event) {
+                    if (event.target.id === 'approveBtn') {
+                        approveRecording();
+                    } else if (event.target.id === 'rejectBtn') {
+                        rejectRecording();
+                    }
+                });
+            });
+        </script>
+    </body>
+</html>

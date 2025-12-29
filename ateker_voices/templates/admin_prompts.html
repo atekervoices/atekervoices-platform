@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <meta name="description" content="Prompt management for Ateker Voices">
+        <meta name="author" content="Ateker Voices">
+
+        <title>Manage Prompts - Ateker Voices</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/fontawesome-all.min.css" rel="stylesheet">
+        <style>
+            body {
+                background: #f8f9fa;
+                color: #333;
+            }
+            .navbar {
+                background: #ffffff !important;
+            }
+            .navbar-brand {
+                color: #333 !important;
+            }
+            .card {
+                border: 1px solid #e0e0e0;
+            }
+            .card-title {
+                color: #333;
+            }
+            .btn-success {
+                background: #d0630e !important;
+                border-color: #d0630e !important;
+            }
+            .btn-primary {
+                background: #d0630e !important;
+                border-color: #d0630e !important;
+            }
+            .btn-secondary {
+                background: #6c757d !important;
+                border-color: #6c757d !important;
+            }
+            .text-primary {
+                color: #d0630e !important;
+            }
+            .text-success {
+                color: #28a745 !important;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <nav class="navbar navbar-expand-md bg-light">
+                <div class="m-auto text-center">
+                    {% include 'components/admin_header.html' %}
+                    <h2 class="font-weight-bold ml-3">
+                        Prompt Management
+                    </h2>
+                </div>
+            </nav>
+        </header>
+        
+        <!-- Navigation Buttons at Top -->
+        <div class="container-fluid mt-3">
+            <div class="row mb-4">
+                <div class="col-12 text-center">
+                    <a href="/admin" class="btn btn-secondary mr-2">
+                        <i class="fas fa-arrow-left mr-1"></i>Back to Admin
+                    </a>
+                    <a href="/" class="btn btn-primary">
+                        <i class="fas fa-microphone mr-1"></i>Go to Recording
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="container-fluid">
+            <!-- Language Selection -->
+            <div class="row mb-4">
+                <div class="col-md-6 mx-auto">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5><i class="fas fa-language mr-2"></i>Select Language</h5>
+                            <select id="languageSelect" class="form-control" onchange="loadLanguage()">
+                                <option value="">Choose a language...</option>
+                                {% for name, code in languages: %}
+                                <option value="{{ code }}" {% if code == language %}selected{% endif %}>{{ name }} ({{ code }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if language %}
+            <!-- Bulk Import -->
+            <div class="row mb-4">
+                <div class="col-md-8 mx-auto">
+                    <div class="card border-info">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="fas fa-upload mr-2"></i>Bulk Import Prompts</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="form-group">
+                                        <label for="importFile">Import CSV/Excel File:</label>
+                                        <input type="file" id="importFile" class="form-control" accept=".csv,.xlsx,.xls">
+                                        <small class="form-text text-muted">
+                                            Upload a CSV file (comma-separated with quoted text) or Excel file (.xlsx, .xls). Only the first column (prompt_text) will be imported.
+                                        </small>
+                                    </div>
+                                    <button id="importBtn" class="btn btn-info" onclick="importPrompts()">
+                                        <i class="fas fa-upload mr-1"></i>Import Prompts
+                                    </button>
+                                </div>
+                                <div class="col-md-4 text-center">
+                                    <div class="border p-3 bg-light">
+                                        <h6><i class="fas fa-download mr-1"></i>Download Template</h6>
+                                        <p class="small text-muted mb-2">Get the correct format for bulk import</p>
+                                        <a href="/templates/import_template.csv" download class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-download mr-1"></i>CSV Template
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="importProgress" class="mt-3" style="display: none;">
+                                <div class="progress">
+                                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                </div>
+                                <p class="small text-muted mt-1" id="importStatus"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Existing Prompts -->
+            <div class="row">
+                <div class="col-md-10 mx-auto">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-list mr-2"></i>Existing Prompts for {{ language }}</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if prompt_groups: %}
+                                {% for category, prompts in prompt_groups.items(): %}
+                                <div class="mb-4">
+                                    <h6 class="text-primary border-bottom pb-2">
+                                        <i class="fas fa-folder mr-1"></i>{{ category }} ({{ prompts|length }} prompts)
+                                    </h6>
+                                    <div class="row">
+                                        {% for prompt in prompts: %}
+                                        <div class="col-md-6 mb-2">
+                                            <div class="card border-light">
+                                                <div class="card-body p-2">
+                                                    <div class="d-flex justify-content-between align-items-start">
+                                                        <div class="flex-grow-1">
+                                                            <small class="text-muted">ID: {{ prompt.id }}</small>
+                                                            <p class="mb-1">{{ prompt.text }}</p>
+                                                        </div>
+                                                        <button class="btn btn-sm btn-outline-danger ml-2" 
+                                                                onclick="deletePrompt('{{ prompt.group }}', '{{ prompt.id }}')">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else: %}
+                                <div class="text-center text-muted">
+                                    <i class="fas fa-3x fa-inbox mb-3"></i>
+                                    <p>No prompts found for this language. Add some prompts above to get started!</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Alert Modal -->
+        <div class="modal fade" id="alertModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="alertTitle">Notice</h5>
+                        <button type="button" class="close" data-dismiss="modal">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" id="alertMessage">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <script src="../js/bootstrap.min.js"></script>
+        <script>
+            function loadLanguage() {
+                const language = document.getElementById('languageSelect').value;
+                if (language) {
+                    window.location.href = '/admin/prompts?language=' + language;
+                }
+            }
+            
+            async function addPrompt(event) {
+                event.preventDefault();
+                
+                const formData = new FormData();
+                formData.append('language', '{{ language }}');
+                formData.append('category', document.getElementById('category').value);
+                formData.append('text', document.getElementById('promptText').value);
+                
+                try {
+                    const response = await fetch('/admin/add_prompt', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        showAlert('Success', 'Prompt added successfully!');
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        showAlert('Error', result.error || 'Failed to add prompt');
+                    }
+                } catch (error) {
+                    showAlert('Error', 'Network error: ' + error.message);
+                }
+            }
+            
+            async function deletePrompt(category, id) {
+                if (!confirm('Are you sure you want to delete this prompt?')) {
+                    return;
+                }
+                
+                const formData = new FormData();
+                formData.append('language', '{{ language }}');
+                formData.append('category', category);
+                formData.append('id', id);
+                
+                try {
+                    const response = await fetch('/admin/delete_prompt', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        showAlert('Success', 'Prompt deleted successfully!');
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        showAlert('Error', 'Failed to delete prompt');
+                    }
+                } catch (error) {
+                    showAlert('Error', 'Network error: ' + error.message);
+                }
+            }
+            
+            async function importPrompts() {
+                const fileInput = document.getElementById('importFile');
+                const file = fileInput.files[0];
+
+                if (!file) {
+                    showAlert('Error', 'Please select a file to import');
+                    return;
+                }
+
+                // Show progress
+                const progressBar = document.querySelector('#importProgress .progress-bar');
+                const statusText = document.getElementById('importStatus');
+                document.getElementById('importProgress').style.display = 'block';
+
+                progressBar.style.width = '0%';
+                statusText.textContent = 'Reading file...';
+
+                try {
+                    const file = fileInput.files[0];
+                    const fileName = file.name.toLowerCase();
+
+                    // Check if it's an Excel file
+                    if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+                        throw new Error('Excel file import requires server-side processing. Please convert to CSV format first or contact support for Excel import functionality.');
+                    }
+
+                    const text = await file.text();
+
+                    if (!text.trim()) {
+                        throw new Error('File is empty');
+                    }
+
+                    const lines = text.split('\n').filter(line => line.trim());
+
+                    if (lines.length < 2) { // Header + at least one data row
+                        throw new Error('File must contain at least a header row and one data row');
+                    }
+
+                    progressBar.style.width = '25%';
+                    statusText.textContent = 'Parsing CSV data...';
+
+                    // Parse CSV properly handling quotes and commas
+                    const promptsToAdd = parseCSV(text);
+
+                    if (promptsToAdd.length === 0) {
+                        throw new Error('No valid prompts found in file');
+                    }
+
+                    progressBar.style.width = '50%';
+                    statusText.textContent = `Found ${promptsToAdd.length} prompts. Importing...`;
+
+                    // Import prompts one by one
+                    let successCount = 0;
+                    let errorCount = 0;
+
+                    for (let i = 0; i < promptsToAdd.length; i++) {
+                        const prompt = promptsToAdd[i];
+
+                        try {
+                            const formData = new FormData();
+                            formData.append('language', '{{ language }}');
+                            formData.append('category', 'General');  // Default category
+                            formData.append('text', prompt);
+
+                            const response = await fetch('/admin/add_prompt', {
+                                method: 'POST',
+                                body: formData
+                            });
+
+                            if (response.ok) {
+                                successCount++;
+                            } else {
+                                errorCount++;
+                            }
+                        } catch (error) {
+                            errorCount++;
+                        }
+
+                        // Update progress
+                        const progress = 50 + (i / promptsToAdd.length) * 50;
+                        progressBar.style.width = `${progress}%`;
+                    }
+
+                    progressBar.style.width = '100%';
+                    statusText.textContent = `Import complete! ${successCount} added, ${errorCount} errors`;
+
+                    // Show detailed results if there were imports or errors
+                    if (successCount > 0 || errorCount > 0) {
+                        let details = `Successfully imported ${successCount} prompts:\n`;
+                        promptsToAdd.slice(0, successCount).forEach((prompt, index) => {
+                            details += `${index + 1}. "${prompt}"\n`;
+                        });
+
+                        if (errorCount > 0) {
+                            details += `\nFailed to import ${errorCount} prompts.`;
+                        }
+
+                        setTimeout(() => {
+                            showAlert('Import Results', details);
+                        }, 500);
+                    }
+
+                    setTimeout(() => {
+                        if (successCount > 0) {
+                            window.location.reload();
+                        }
+                    }, 2500);
+
+                } catch (error) {
+                    progressBar.style.width = '0%';
+                    statusText.textContent = '';
+                    document.getElementById('importProgress').style.display = 'none';
+                    showAlert('Import Error', error.message);
+                }
+            }
+
+            function parseCSV(csvText) {
+                const lines = csvText.split('\n').filter(line => line.trim());
+                if (lines.length === 0) return [];
+
+                // Simple CSV parser that handles quotes
+                const result = [];
+                for (let i = 1; i < lines.length; i++) { // Skip header
+                    const line = lines[i].trim();
+                    if (!line) continue;
+
+                    // Handle quoted fields
+                    const fields = [];
+                    let current = '';
+                    let inQuotes = false;
+
+                    for (let j = 0; j < line.length; j++) {
+                        const char = line[j];
+
+                        if (char === '"') {
+                            if (inQuotes && j + 1 < line.length && line[j + 1] === '"') {
+                                // Escaped quote
+                                current += '"';
+                                j++; // Skip next quote
+                            } else {
+                                // Toggle quote state
+                                inQuotes = !inQuotes;
+                            }
+                        } else if (char === ',' && !inQuotes) {
+                            // Field separator
+                            fields.push(current.trim());
+                            current = '';
+                        } else {
+                            current += char;
+                        }
+                    }
+
+                    // Add the last field
+                    fields.push(current.trim());
+
+                    // Clean up quotes from fields
+                    const cleanFields = fields.map(field => {
+                        if (field.startsWith('"') && field.endsWith('"')) {
+                            return field.slice(1, -1);
+                        }
+                        return field;
+                    });
+
+                    // Take only the first column (prompt_text)
+                    if (cleanFields.length > 0 && cleanFields[0]) {
+                        result.push(cleanFields[0]);
+                    }
+                }
+
+                return result;
+            }
+        </script>
+    </body>
+</html>

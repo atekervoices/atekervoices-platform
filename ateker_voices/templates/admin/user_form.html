@@ -1,0 +1,150 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}{{ title }} - Admin Panel{% endblock %}
+
+{% block header %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <form method="POST" action="">
+            {{ form.hidden_tag() }}
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" 
+                               value="{{ user.username if user else '' }}" required>
+                        <div class="form-text">Required. 3-50 characters. Letters, digits and @/./+/-/_ only.</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" 
+                               value="{{ user.email if user and user.email else '' }}">
+                        <div class="form-text">Optional. Used for password resets and notifications.</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="password" class="form-label">{{ 'New Password' if user else 'Password' }}</label>
+                        <input type="password" class="form-control" id="password" name="password" 
+                               {{ 'required' if not user else '' }}>
+                        {% if user %}
+                        <div class="form-text">Leave blank to keep current password.</div>
+                        {% else %}
+                        <div class="form-text">Minimum 8 characters.</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="confirm_password" class="form-label">Confirm Password</label>
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password"
+                               {{ 'required' if not user else '' }}>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="is_admin" name="is_admin" 
+                           {{ 'checked' if user and user.is_admin else '' }}>
+                    <label class="form-check-label" for="is_admin">
+                        Administrator
+                    </label>
+                    <div class="form-text">Administrators have full access to the admin panel.</div>
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('admin.user_management') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Cancel
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> {{ 'Save Changes' if user else 'Create User' }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if user %}
+<div class="card mt-4">
+    <div class="card-header">
+        User Activity
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <dl class="row">
+                    <dt class="col-sm-5">Account Created</dt>
+                    <dd class="col-sm-7">{{ user.created_at.strftime('%Y-%m-%d %H:%M') }}</dd>
+                    
+                    <dt class="col-sm-5">Last Login</dt>
+                    <dd class="col-sm-7">
+                        {% if user.last_login %}
+                            {{ user.last_login.strftime('%Y-%m-%d %H:%M') }}
+                        {% else %}
+                            Never
+                        {% endif %}
+                    </dd>
+                </dl>
+            </div>
+            <div class="col-md-6">
+                <dl class="row">
+                    <dt class="col-sm-5">Recordings</dt>
+                    <dd class="col-sm-7">
+                        <a href="{{ url_for('admin.recording_management', user_id=user.id) }}">
+                            {{ user.recordings.count() }} recordings
+                        </a>
+                    </dd>
+                    
+                    <dt class="col-sm-5">Exports</dt>
+                    <dd class="col-sm-7">
+                        <a href="{{ url_for('admin.export_management', user_id=user.id) }}">
+                            {{ user.exports.count() }} exports
+                        </a>
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validation
+    const form = document.querySelector('form');
+    const password = document.getElementById('password');
+    const confirmPassword = document.getElementById('confirm_password');
+    
+    function validatePassword() {
+        if (password.value !== confirmPassword.value) {
+            confirmPassword.setCustomValidity("Passwords don't match");
+        } else {
+            confirmPassword.setCustomValidity('');
+        }
+    }
+    
+    password.onchange = validatePassword;
+    confirmPassword.onkeyup = validatePassword;
+    
+    form.onsubmit = function() {
+        if (password.value && password.value.length < 8) {
+            alert('Password must be at least 8 characters long');
+            return false;
+        }
+        return true;
+    };
+});
+</script>
+{% endblock %}
+{% endblock %}

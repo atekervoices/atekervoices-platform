@@ -1,2 +1,2 @@
 all:
-	docker build . -t rhasspy/piper-recording-studio
+	docker build . -t ateker-voices

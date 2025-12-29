@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <meta name="description" content="Ateker Voices - Help preserve and digitize Ateker languages (Ngakarimojong, Ateso, Soo, Ik) through voice recordings">
+        <meta name="author" content="Ateker Voices">
+        <meta name="keywords" content="Ateker languages, Ngakarimojong, Ateso, Soo, Ik, voice recording, language preservation, linguistic diversity, cultural heritage">
+
+        <title>Ateker Voices - Preserve Ateker Languages</title>
+        <link href="css/bootstrap.min.css" rel="stylesheet">
+        <link href="css/fontawesome-all.min.css" rel="stylesheet">
+        <style>
+            .hero-section {
+                background: #ffffff;
+                color: #333;
+                padding: 150px 0 100px 0;
+                text-align: center;
+            }
+            .language-card {
+                transition: transform 0.3s ease;
+                margin-bottom: 20px;
+                border: 1px solid #e0e0e0;
+            }
+            .language-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+                border-color: #d0630e !important;
+            }
+            .feature-icon {
+                font-size: 3rem;
+                color: #d0630e;
+                margin-bottom: 20px;
+            }
+            .stats-counter {
+                font-size: 2.5rem;
+                font-weight: bold;
+                color: #d0630e;
+            }
+            .btn-cta {
+                background: #d0630e;
+                border: none;
+                padding: 15px 40px;
+                font-size: 1.2rem;
+                border-radius: 50px;
+                transition: transform 0.3s ease;
+                color: white;
+            }
+            .btn-cta:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 25px rgba(255, 140, 0, 0.4);
+                background: #FFA07A;
+                color: white;
+            }
+            .navbar-brand span {
+                color: #d0630e;
+            }
+            .nav-link.btn-outline-primary {
+                color: #d0630e;
+                border-color: #d0630e !important;
+            }
+            .nav-link.btn-outline-primary:hover {
+                background: #d0630e;
+                color: white;
+            }
+            .bg-primary {
+                background: #d0630e !important;
+            }
+            .text-primary {
+                color: #d0630e !important;
+            }
+            .card {
+                border: 1px solid #e0e0e0;
+            }
+            .card-title {
+                color: #333;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Navigation -->
+        {% include 'components/header.html' %}
+
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <h1 class="display-4 font-weight-bold mb-4">
+                            Preserve Ateker Languages Heritage
+                        </h1>
+                        <p class="lead mb-4">
+                            Help digitize and preserve Ateker languages (Ngakarimojong, Ateso, Soo, Ik) through voice recordings.
+                            Your contribution supports linguistic diversity and cultural preservation for Ateker communities.
+                        </p>
+                        <div class="row text-center mb-4">
+                            <div class="col-md-4">
+                                <div class="stats-counter">4</div>
+                                <p class="mb-0">Languages Supported</p>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stats-counter">1000+</div>
+                                <p class="mb-0">Voice Recordings</p>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stats-counter">∞</div>
+                                <p class="mb-0">Cultural Impact</p>
+                            </div>
+                        </div>
+                        <a href="#get-started" class="btn btn-cta btn-lg text-white">
+                            <i class="fas fa-microphone mr-2"></i>Start Recording Now
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section id="features" class="py-5" style="padding-top: 80px;">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-4 text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-language"></i>
+                        </div>
+                        <h4 style="color: #333;">Ateker Languages</h4>
+                        <p class="text-muted">
+                            Focus on preserving Ateker languages: Ngakarimojong, Ateso, Soo, and Ik, spoken by Ateker people across northeastern Uganda and Kenya.
+                        </p>
+                    </div>
+                    <div class="col-lg-4 text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-cogs"></i>
+                        </div>
+                        <h4 style="color: #333;">Dynamic Prompt Management</h4>
+                        <p class="text-muted">
+                            Create and manage recording prompts through an intuitive admin interface. Add new sentences and categories easily.
+                        </p>
+                    </div>
+                    <div class="col-lg-4 text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h4 style="color: #333;">Community-Driven</h4>
+                        <p class="text-muted">
+                            Built in partnership with the Ateker community to ensure authentic voice collection and cultural preservation.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Languages Section -->
+        <section id="languages" class="bg-light py-5" style="padding-top: 80px;">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12 text-center mb-5">
+                        <h2 class="display-5" style="color: #333;">Supported Ateker Languages</h2>
+                        <p class="lead text-muted">Contribute to preserving Ngakarimojong, Ateso, Soo, and Ik - languages of Ateker people</p>
+                    </div>
+                </div>
+                <div class="row">
+                    {% for name, code in languages|sort %}
+                    <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+                        <div class="card language-card h-100">
+                            <div class="card-body text-center">
+                                <h6 class="card-title" style="color: #333;">{{ name }}</h6>
+                                <small class="text-muted">{{ code }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section id="about" class="py-5" style="padding-top: 80px;">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <h2 style="color: #333;">About Ateker Voices</h2>
+                        <p class="lead" style="color: #333;">
+                            Ateker Voices is dedicated to preserving Ateker languages through community-driven voice collection.
+                        </p>
+                        <p style="color: #333;">
+                            We focus on Ateker languages: Ngakarimojong, Ateso, Soo, and Ik, spoken by Ateker people across northeastern Uganda and Kenya, to build robust speech recognition models that can understand and process these important cultural languages accurately.
+                        </p>
+                        <p style="color: #333;">
+                            All collected data is used to create language technologies that serve Ateker communities and help preserve their linguistic heritage for future generations.
+                        </p>
+                    </div>
+                    <div class="col-lg-6">
+                        <h3 style="color: #333;">How It Works</h3>
+                        <div class="row">
+                            <div class="col-sm-4 text-center">
+                                <div style="font-size: 3rem; color: #d0630e; margin-bottom: 15px;">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                                <h5 style="color: #333;">1. Choose Ateker Language</h5>
+                                <p class="text-muted">Select your native Ateker language</p>
+                            </div>
+                            <div class="col-sm-4 text-center">
+                                <div style="font-size: 3rem; color: #d0630e; margin-bottom: 15px;">
+                                    <i class="fas fa-microphone"></i>
+                                </div>
+                                <h5 style="color: #333;">2. Record Prompts</h5>
+                                <p class="text-muted">Read and record sentences clearly</p>
+                            </div>
+                            <div class="col-sm-4 text-center">
+                                <div style="font-size: 3rem; color: #d0630e; margin-bottom: 15px;">
+                                    <i class="fas fa-upload"></i>
+                                </div>
+                                <h5 style="color: #333;">3. Submit</h5>
+                                <p class="text-muted">Submit recordings for Ateker Voices language preservation</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Get Started Section -->
+        <section id="get-started" class="bg-primary text-white py-5" style="padding-top: 80px;">
+            <div class="container text-center">
+                <h2 class="mb-4" style="color: white !important;">Community Language Collection</h2>
+                <p class="lead mb-4" style="color: white !important;">
+                    Participate in Ateker Voices initiative to help preserve Ateker languages for future generations
+                </p>
+                <div class="row">
+                    <div class="col-md-8 mx-auto">
+                        {% if multi_user: %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="userId" class="form-label" style="color: white !important;">Login Code:</label>
+                                <input id="userId" type="text" class="form-control" placeholder="Enter your login code" style="color: #333 !important; background: white !important;">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="language" class="form-label" style="color: white !important;">Choose Language:</label>
+                                <select id="language" class="form-control" style="color: #333 !important; background: white !important;">
+                                    <option value="" selected>Select your language</option>
+                                    {% for name, code in languages: %}
+                                    <option value="{{ code }}" style="color: #333 !important;">{{ name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        {% else: %}
+                        <div class="mb-3">
+                            <label for="language" class="form-label" style="color: white !important;">Choose Language:</label>
+                            <select id="language" class="form-control" style="color: #333 !important; background: white !important;">
+                                <option value="" selected>Select your language</option>
+                                {% for name, code in languages: %}
+                                <option value="{{ code }}" style="color: #333 !important;">{{ name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+
+                        <button id="startRecording" class="btn btn-lg mt-3" disabled style="background-color: #000000 !important; color: white !important; border: 2px solid #000000 !important;">
+                            <i class="fas fa-microphone mr-2"></i>Start Recording
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="py-5" style="background-color: #ffffff; color: #333; border-top: 1px solid #e0e0e0;">
+            <div class="container">
+                <div class="row">
+                    <!-- About Section -->
+                    <div class="col-lg-4 mb-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <img src="img/ateker-logo.png" alt="Ateker Logo" style="height: 40px; margin-right: 12px;">
+                            <h4 class="mb-0 font-weight-bold">Ateker Voices</h4>
+                        </div>
+                        <p class="text-muted">
+                            Preserving the linguistic heritage of Ateker communities through innovative voice technology. 
+                            Supporting Ngakarimojong, Ateso, Soo, and Ik languages for future generations.
+                        </p>
+                    </div>
+                    
+                    <!-- Quick Links -->
+                    <div class="col-lg-2 col-md-6 mb-4">
+                        <h5 class="font-weight-bold mb-3">Platform</h5>
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><a href="#features" class="text-muted text-decoration-none">Features</a></li>
+                            <li class="mb-2"><a href="#languages" class="text-muted text-decoration-none">Languages</a></li>
+                            <li class="mb-2"><a href="#about" class="text-muted text-decoration-none">About</a></li>
+                            <li class="mb-2"><a href="/admin" class="text-muted text-decoration-none">Admin</a></li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Languages -->
+                    <div class="col-lg-3 col-md-6 mb-4">
+                        <h5 class="font-weight-bold mb-3">Supported Languages</h5>
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><span class="text-muted">Ngakarimojong</span></li>
+                            <li class="mb-2"><span class="text-muted">Ateso</span></li>
+                            <li class="mb-2"><span class="text-muted">Soo</span></li>
+                            <li class="mb-2"><span class="text-muted">Ik</span></li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Contact Info -->
+                    <div class="col-lg-3 col-md-6 mb-4">
+                        <h5 class="font-weight-bold mb-3">Get Involved</h5>
+                        <p class="text-muted mb-2">
+                            <i class="fas fa-envelope mr-2"></i>contact@atekervoices.org
+                        </p>
+                        <p class="text-muted mb-2">
+                            <i class="fas fa-globe mr-2"></i>www.atekervoices.org
+                        </p>
+                        <p class="text-muted mb-3">
+                            <i class="fas fa-map-marker-alt mr-2"></i>East Africa
+                        </p>
+                        <div class="mt-3">
+                            <a href="#" class="text-muted mr-3" style="font-size: 1.2rem;"><i class="fab fa-facebook"></i></a>
+                            <a href="#" class="text-muted mr-3" style="font-size: 1.2rem;"><i class="fab fa-twitter"></i></a>
+                            <a href="#" class="text-muted mr-3" style="font-size: 1.2rem;"><i class="fab fa-github"></i></a>
+                            <a href="#" class="text-muted" style="font-size: 1.2rem;"><i class="fab fa-linkedin"></i></a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bottom Bar -->
+                <div class="border-top pt-4 mt-4" style="border-color: #e0e0e0;">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <p class="text-muted mb-0">
+                                &copy; 2025 Ateker Voices. All rights reserved. 
+                            </p>
+                        </div>
+                        <div class="col-md-6 text-md-right">
+                            <small class="text-muted">
+                                <a href="#" class="text-muted mr-3">Privacy Policy</a>
+                                <a href="#" class="text-muted mr-3">Terms of Service</a>
+                                <a href="#" class="text-muted">Cookie Policy</a>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+        <!-- Bootstrap JS -->
+        <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+
+        <script>
+            {% if multi_user: %}
+            var verbs = ['record', 'upload'];
+            {% else: %}
+            var verbs = ['record'];
+            {% endif %}
+
+            function q(id) {
+                return document.querySelector(id);
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                // Enable/disable start recording button
+                function updateStartButton() {
+                    let language = q('#language').value;
+                    {% if multi_user: %}
+                    let userId = q('#userId').value;
+                    q('#startRecording').disabled = (language.length < 1) || (userId.length < 1);
+                    {% else: %}
+                    q('#startRecording').disabled = (language.length < 1);
+                    {% endif %}
+                }
+
+                // Language selection change
+                q('#language').addEventListener('change', function() {
+                    updateStartButton();
+                });
+
+                {% if multi_user: %}
+                // User ID input change
+                q('#userId').addEventListener('keyup', function() {
+                    updateStartButton();
+                });
+                {% endif %}
+
+                // Start recording button click
+                q('#startRecording').addEventListener('click', function() {
+                    let language = q('#language').value;
+                    {% if multi_user: %}
+                    let userId = q('#userId').value;
+                    if (language && userId) {
+                        window.location.href = '/record?language=' + language + '&userId=' + userId;
+                    }
+                    {% else: %}
+                    if (language) {
+                        window.location.href = '/record?language=' + language;
+                    }
+                    {% endif %}
+                });
+
+                // Legacy form handlers for upload (if multi-user)
+                {% if multi_user: %}
+                verbs.forEach(function(verb) {
+                    q('#' + verb + 'Language').value = '{{ language }}';
+                });
+
+                q('#language').addEventListener('change', function() {
+                    let language = q('#language').value;
+                    verbs.forEach(function(verb) {
+                        q('#' + verb + 'Language').value = language;
+
+                        let userId = q('#userId').value;
+                        q('#' + verb + 'Button').disabled = (language.length < 1) || (userId.length < 1);
+                    });
+                });
+
+                q('#userId').addEventListener('keyup', function() {
+                    let language = q('#language').value;
+                    let userId = q('#userId').value;
+                    verbs.forEach(function(verb) {
+                        q('#' + verb + 'UserId').value = userId;
+                        q('#' + verb + 'Button').disabled = (language.length < 1) || (userId.length < 1);
+                    });
+                });
+                {% endif %}
+            });
+        </script>
+    </body>
+</html>
