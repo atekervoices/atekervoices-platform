@@ -18,8 +18,9 @@ COPY . .
 # Create necessary directories
 RUN mkdir -p /app/output /data
 
-# Expose port
+# Expose ports
 EXPOSE 80
+EXPOSE 443
 
 # Command to run the application
 CMD ["python", "-m", "ateker_voices"]

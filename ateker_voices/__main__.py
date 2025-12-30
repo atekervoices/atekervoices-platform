@@ -39,6 +39,9 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--port", type=int, default=80)
+    parser.add_argument("--ssl", action="store_true", help="Enable HTTPS with self-signed certificate")
+    parser.add_argument("--cert-file", help="Path to SSL certificate file")
+    parser.add_argument("--key-file", help="Path to SSL private key file")
     #
     parser.add_argument(
         "--prompts",
@@ -526,6 +529,16 @@ def main() -> None:
     # Run web server
     hyp_config = hypercorn.config.Config()
     hyp_config.bind = [f"{args.host}:{args.port}"]
+    
+    # Configure SSL if enabled
+    if args.ssl:
+        if args.cert_file and args.key_file:
+            hyp_config.bind = [f"{args.host}:{args.port}?certfile={args.cert_file}&keyfile={args.key_file}"]
+        else:
+            # Generate self-signed certificate
+            import ssl
+            hyp_config.bind = [f"{args.host}:{args.port}?ssl=True"]
+            hyp_config.use_reloader = True
 
     asyncio.run(hypercorn.asyncio.serve(app, hyp_config))
 

@@ -291,6 +291,24 @@
              q('#alert').textContent = text;
          }
 
+         function checkBrowserSupport() {
+             // Check if getUserMedia is supported
+             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                 setAlert('Your browser does not support microphone access. Please use a modern browser like Chrome, Firefox, or Edge.', 'alert-danger');
+                 q('#enable').disabled = true;
+                 return false;
+             }
+             
+             // Check if running on HTTPS
+             if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+                 setAlert('Microphone access requires HTTPS. Please access this site via HTTPS.', 'alert-danger');
+                 q('#enable').disabled = true;
+                 return false;
+             }
+             
+             return true;
+         }
+
          function stopRecording() {
             recording = false;
             recorder.stop();
@@ -394,6 +412,11 @@
           });
 
           document.addEventListener('DOMContentLoaded', function() {
+              // Check browser support first
+              if (!checkBrowserSupport()) {
+                  return;
+              }
+              
               q('#record').disabled = true;
               q('#submit').disabled = true;
 

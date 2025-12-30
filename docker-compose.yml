@@ -9,16 +9,18 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./data:/data
       - ateker_recordings:/app/output
+      - ./certs:/app/certs
     environment:
       - FLASK_APP=ateker_voices/__init__.py
       - FLASK_ENV=production
       - SECRET_KEY=your-secret-key-change-this
       - DATABASE_URL=sqlite:////data/ateker_voices.db
       - UPLOAD_FOLDER=/app/output
-    command: python -m ateker_voices
+    command: python -m ateker_voices --ssl --cert-file /app/certs/server.crt --key-file /app/certs/server.key
 
 volumes:
   ateker_recordings:
