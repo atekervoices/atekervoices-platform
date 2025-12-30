@@ -19,7 +19,7 @@ COPY . .
 RUN mkdir -p /app/output /data
 
 # Expose port
-EXPOSE 8000
+EXPOSE 80
 
 # Command to run the application
 CMD ["python", "-m", "ateker_voices"]

@@ -52,8 +52,8 @@ A comprehensive tool for recording and managing voice datasets for training Atek
    ```
 
 4. Access the application:
-   - Main application: http://localhost:8000
-   - Admin panel: http://localhost:8000/admin
+   - Main application: http://localhost:80
+   - Admin panel: http://localhost:80/admin
    - Default admin credentials: admin / change_this_password
 
 ## Manual Installation
