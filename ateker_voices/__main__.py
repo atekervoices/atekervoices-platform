@@ -528,17 +528,19 @@ def main() -> None:
 
     # Run web server
     hyp_config = hypercorn.config.Config()
-    hyp_config.bind = [f"{args.host}:{args.port}"]
     
     # Configure SSL if enabled
     if args.ssl:
         if args.cert_file and args.key_file:
-            hyp_config.bind = [f"{args.host}:{args.port}?certfile={args.cert_file}&keyfile={args.key_file}"]
+            hyp_config.bind = [f"{args.host}:443"]
+            hyp_config.certfile = args.cert_file
+            hyp_config.keyfile = args.key_file
         else:
             # Generate self-signed certificate
-            import ssl
-            hyp_config.bind = [f"{args.host}:{args.port}?ssl=True"]
+            hyp_config.bind = [f"{args.host}:443"]
             hyp_config.use_reloader = True
+    else:
+        hyp_config.bind = [f"{args.host}:{args.port}"]
 
     asyncio.run(hypercorn.asyncio.serve(app, hyp_config))
 
