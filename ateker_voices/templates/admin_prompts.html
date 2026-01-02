@@ -48,31 +48,21 @@
     </head>
     <body>
         <header>
-            <nav class="navbar navbar-expand-md bg-light">
-                <div class="m-auto text-center">
-                    {% include 'components/admin_header.html' %}
-                    <h2 class="font-weight-bold ml-3">
-                        Prompt Management
-                    </h2>
-                </div>
-            </nav>
+            {% include 'components/admin_header.html' %}
         </header>
-        
-        <!-- Navigation Buttons at Top -->
-        <div class="container-fluid mt-3">
-            <div class="row mb-4">
-                <div class="col-12 text-center">
-                    <a href="/admin" class="btn btn-secondary mr-2">
-                        <i class="fas fa-arrow-left mr-1"></i>Back to Admin
-                    </a>
-                    <a href="/" class="btn btn-primary">
-                        <i class="fas fa-microphone mr-1"></i>Go to Recording
-                    </a>
+
+        <main class="container mt-4">
+            <div class="row">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2><i class="fas fa-list-alt mr-2"></i>Prompt Management</h2>
+                        <a href="/admin" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left mr-1"></i>Back to Admin
+                        </a>
+                    </div>
                 </div>
             </div>
-        </div>
         
-        <div class="container-fluid">
             <!-- Language Selection -->
             <div class="row mb-4">
                 <div class="col-md-6 mx-auto">
@@ -132,6 +122,52 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
+            
+            {% if language %}
+            <!-- Add New Prompt -->
+            <div class="row mb-4">
+                <div class="col-md-8 mx-auto">
+                    <div class="card border-success">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="fas fa-plus mr-2"></i>Add New Prompt</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="addPromptForm" onsubmit="addPrompt(event)">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="category">Category:</label>
+                                            <select id="category" class="form-control" required>
+                                                <option value="">Select category...</option>
+                                                <option value="General">General</option>
+                                                <option value="Numbers">Numbers</option>
+                                                <option value="Colors">Colors</option>
+                                                <option value="Family">Family</option>
+                                                <option value="Animals">Animals</option>
+                                                <option value="Food">Food</option>
+                                                <option value="Weather">Weather</option>
+                                                <option value="Custom">Custom</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="promptText">Prompt Text:</label>
+                                            <textarea id="promptText" class="form-control" rows="3" placeholder="Enter the prompt text..." required></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-center">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-plus mr-1"></i>Add Prompt
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
             
             <!-- Existing Prompts -->
             <div class="row">
@@ -180,7 +216,6 @@
                 </div>
             </div>
             {% endif %}
-        </div>
         
         <!-- Alert Modal -->
         <div class="modal fade" id="alertModal" tabindex="-1">
@@ -442,5 +477,6 @@
                 return result;
             }
         </script>
+        </main>
     </body>
 </html>

@@ -9,7 +9,7 @@ def create_app(config_class=None):
     # Load default config and override with config_class if provided
     app.config.from_mapping(
         SECRET_KEY=os.environ.get('SECRET_KEY', 'dev-key-change-this-in-production'),
-        SQLALCHEMY_DATABASE_URI=os.environ.get('DATABASE_URL', 'sqlite:////data/ateker_voices.db'),
+        SQLALCHEMY_DATABASE_URI=os.environ.get('DATABASE_URL', 'sqlite:///ateker_voices.db'),
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
         UPLOAD_FOLDER=os.environ.get('UPLOAD_FOLDER', os.path.join(os.getcwd(), 'output')),
         MAX_CONTENT_LENGTH=int(os.environ.get('MAX_CONTENT_LENGTH', 200 * 1024 * 1024))  # 200MB default
@@ -42,8 +42,9 @@ def create_app(config_class=None):
     with app.app_context():
         try:
             db.create_all()
+            print("Database tables created/updated successfully.")
         except Exception as e:
-            # Tables already exist, continue
-            pass
+            print(f"Database creation note: {e}")
+            # Tables may already exist, continue
     
     return app

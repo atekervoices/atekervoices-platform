@@ -1,8 +1,8 @@
 <!-- Header Component -->
 <nav class="navbar navbar-expand-lg shadow-sm fixed-top" style="background-color: #ffffff !important;">
     <div class="container">
-        <a class="navbar-brand d-flex align-items-center" href="/">
-            <img src="img/ateker-logo.png" alt="Ateker Logo" style="height: 60px; margin-right: 15px;">
+        <a class="navbar-brand d-flex align-items-center" href="{{ url_for('main.index') }}">
+            <img src="{{ url_for('static', filename='img/ateker-logo.png') }}" alt="Ateker Logo" style="height: 60px; margin-right: 15px;">
             <span class="font-weight-bold" style="color: #333 !important;">Ateker Voices</span>
         </a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" style="border-color: #333;">
@@ -19,10 +19,72 @@
                 <li class="nav-item">
                     <a class="nav-link" href="#about" style="color: #333 !important;">About</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link btn ml-2" href="/admin" style="color: white !important; background-color: #d0630e; border-color: #d0630e;">Admin Panel</a>
-                </li>
+                
+                {% if current_user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="color: #333 !important;">
+                            <i class="fas fa-user"></i> {{ current_user.username }}
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+                            {% if current_user.is_admin %}
+                                <a class="dropdown-item" href="{{ url_for('main.admin_admin') }}">
+                                    <i class="fas fa-cog"></i> Admin Panel
+                                </a>
+                                <div class="dropdown-divider"></div>
+                            {% endif %}
+                            <a class="dropdown-item" href="#" onclick="logout()">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </a>
+                        </div>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link btn ml-2" href="{{ url_for('main.login') }}" style="color: white !important; background-color: #d0630e; border-color: #d0630e;">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link btn ml-2" href="{{ url_for('main.register') }}" style="color: #d0630e !important; border-color: #d0630e;">Register</a>
+                    </li>
+                {% endif %}
             </ul>
         </div>
     </div>
 </nav>
+
+{% if not current_user.is_authenticated %}
+<script>
+function logout() {
+    window.location.href = "{{ url_for('main.logout') }}";
+}
+</script>
+{% else %}
+<!-- Logout Confirmation Modal -->
+<div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="logoutModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="logoutModalLabel">Confirm Logout</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to logout?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="confirmLogout()">Logout</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function logout() {
+    $('#logoutModal').modal('show');
+}
+
+function confirmLogout() {
+    window.location.href = "{{ url_for('main.logout') }}";
+}
+</script>
+{% endif %}

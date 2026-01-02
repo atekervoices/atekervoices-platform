@@ -359,27 +359,32 @@
 
              if (response.ok) {
                  let result = await response.json();
+                 console.log('Server response:', result); // Debug logging
+                 
                  if (result.done) {
                      window.location.href = "done.html";
                      return;
                  }
                  
-                 // Update page
-                 q('#promptGroup').value = result.promptGroup;
-                 q('#promptId').value = result.promptId;
-                 q('#promptText').value = result.promptText;
-                 q('#text').value = result.promptText;
+                 // Update page with next prompt
+                q('#promptGroup').value = result.promptGroup;
+                q('#promptId').value = result.promptId;
+                q('#promptText').value = result.promptText;
+                q('#text').value = result.promptText;
 
-                 q('#numComplete').textContent = result.numComplete;
-                 q('#numItems').textContent = result.numItems;
-                 q('#progressComplete').setAttribute('aria-valuenow', Math.round(result.completePercent));
-                 q('#progressComplete').style.width = Math.round(result.completePercent) + '%';
+                console.log('Updating progress:', result.numComplete, '/', result.numItems); // Debug logging
+                q('#numComplete').textContent = result.numComplete;
+                q('#numItems').textContent = result.numItems;
+                q('#progressComplete').setAttribute('aria-valuenow', Math.round(result.completePercent));
+                q('#progressComplete').style.width = Math.round(result.completePercent) + '%';
 
-                 setAlert('Microphone ready!', 'alert-success');
-
-                 q('#submit').disabled = true;
-                 q('#clipDiv').hidden = true;
-                 q('#submittedIcon').hidden = false;
+                // Reset UI state for next recording
+                q('#submittedIcon').hidden = true;
+                q('#clipDiv').hidden = true;
+                q('#submit').disabled = false;
+                blob = null; // Clear previous recording
+                
+                setAlert('Microphone ready! Next prompt loaded.', 'alert-success');
              } else {
                  let errorText = await response.text();
                  setAlert('Failed to submit: ' + errorText, 'alert-danger');

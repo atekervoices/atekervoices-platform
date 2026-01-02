@@ -85,7 +85,7 @@
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <label for="languageFilter">Language:</label>
                                     <select id="languageFilter" class="form-control">
                                         <option value="">All Languages</option>
@@ -94,7 +94,7 @@
                                         {% endfor %}
                                     </select>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <label for="statusFilter">Status:</label>
                                     <select id="statusFilter" class="form-control">
                                         <option value="">All Statuses</option>
@@ -105,7 +105,13 @@
                                 </div>
                                 <div class="col-md-4">
                                     <label for="userFilter">User:</label>
-                                    <input type="text" id="userFilter" class="form-control" placeholder="Filter by user ID">
+                                    <input type="text" id="userFilter" class="form-control" placeholder="Filter by username">
+                                </div>
+                                <div class="col-md-2">
+                                    <label>&nbsp;</label>
+                                    <button type="button" class="btn btn-outline-secondary btn-block" onclick="clearFilters()">
+                                        <i class="fas fa-times mr-1"></i>Clear
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -230,27 +236,43 @@
 
             // Simple Alert Helper Function
             function showAlert(message, type = 'success') {
-                // For now, just use browser alert to avoid DOM timing issues
-                alert(message + '\n\nType: ' + type);
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+                alertDiv.innerHTML = `
+                    ${message}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                `;
+                
+                const alertPlaceholder = document.getElementById('alertPlaceholder');
+                alertPlaceholder.appendChild(alertDiv);
+                
+                // Auto-dismiss after 5 seconds
+                setTimeout(() => {
+                    alertDiv.remove();
+                }, 5000);
             }
 
             function loadValidationData() {
-                // Use real data passed from the backend
+                // Use real data passed from backend
                 validationData = [
                     {% for recording in validation_data %}
                     {
-                        recording_id: "{{ recording.recording_id|e }}",
-                        language_name: "{{ recording.language_name|e }}",
-                        language: "{{ recording.language|e }}",
-                        user_id: "{{ recording.user_id|e }}",
-                        prompt: "{{ recording.prompt|e }}",
-                        duration: "{{ recording.duration|e }}",
-                        submitted_date: "{{ recording.submitted_date|e }}",
-                        status: "{{ recording.status|e }}",
-                        audio_path: "{{ recording.audio_path|e }}",
-                        validation_notes: "{{ recording.validation_notes|e }}",
-                        validated_by: "{{ recording.validated_by|e }}",
-                        validated_date: "{{ recording.validated_date|e }}"
+                        id: {{ recording.id|tojson }},
+                        recording_id: {{ recording.recording_id|tojson }},
+                        language_name: {{ recording.language_name|tojson }},
+                        language: {{ recording.language|tojson }},
+                        user_id: {{ recording.user_id|tojson }},
+                        username: {{ recording.username|tojson }},
+                        prompt: {{ recording.prompt|tojson }},
+                        duration: {{ recording.duration|tojson }},
+                        submitted_date: {{ recording.submitted_date|tojson }},
+                        status: {{ recording.status|tojson }},
+                        audio_path: {{ recording.audio_path|tojson }},
+                        validation_notes: {{ recording.validation_notes|tojson }},
+                        validated_by: {{ recording.validated_by|tojson }},
+                        validated_date: {{ recording.validated_date|tojson }}
                     }{% if not loop.last %},{% endif %}
                     {% endfor %}
                 ];
@@ -273,7 +295,7 @@
                     <tr>
                         <td>${recording.recording_id}</td>
                         <td>${recording.language_name}</td>
-                        <td>${recording.user_id}</td>
+                        <td>${recording.username}</td>
                         <td title="${recording.prompt}">
                             ${recording.prompt.length > 50 ? recording.prompt.substring(0, 50) + '...' : recording.prompt}
                         </td>
@@ -285,7 +307,7 @@
                             </span>
                         </td>
                         <td>
-                            <button class="btn btn-sm btn-primary review-btn" onclick="openValidationModal('${recording.recording_id}')" data-recording-id="${recording.recording_id}">
+                            <button class="btn btn-sm btn-primary review-btn" onclick="openValidationModal('${recording.id}')" data-recording-id="${recording.id}">
                                 <i class="fas fa-play mr-1"></i>Review
                             </button>
                         </td>
@@ -306,7 +328,7 @@
 
             function openValidationModal(recordingId) {
                 // Find the recording data from our loaded data
-                const recording = validationData.find(r => r.recording_id === recordingId);
+                const recording = validationData.find(r => r.id == recordingId);
 
                 if (!recording) {
                     showAlert('Recording not found', 'danger');
@@ -316,7 +338,7 @@
                 // Populate modal with real data
                 document.getElementById('modalRecordingId').textContent = recording.recording_id;
                 document.getElementById('modalLanguage').textContent = recording.language_name;
-                document.getElementById('modalUserId').textContent = recording.user_id;
+                document.getElementById('modalUserId').textContent = recording.username;
                 document.getElementById('modalPrompt').textContent = recording.prompt;
                 document.getElementById('modalDuration').textContent = recording.duration;
                 document.getElementById('modalDate').textContent = new Date(recording.submitted_date).toLocaleDateString();
@@ -324,9 +346,9 @@
                 // Set transcript text in the dedicated area
                 document.getElementById('transcriptText').textContent = recording.prompt;
 
-                // Set audio source - construct proper path
+                // Set audio source - use the audio route
                 const audio = document.getElementById('modalAudio');
-                const audioPath = '/' + recording.audio_path;
+                const audioPath = '/audio/' + recording.audio_path;
                 audio.src = audioPath;
 
                 // Add error handling for audio loading
@@ -405,23 +427,48 @@
 
                 // Filter functionality
                 document.getElementById('languageFilter').addEventListener('change', function() {
-                    const selectedLanguage = this.value;
-                    // In a real implementation, this would filter the data
+                    applyFilters();
                 });
 
                 document.getElementById('statusFilter').addEventListener('change', function() {
-                    const selectedStatus = this.value;
-                    // In a real implementation, this would filter the data
+                    applyFilters();
                 });
 
-                // Modal buttons - use event delegation since modal might not be in DOM yet
-                document.addEventListener('click', function(event) {
-                    if (event.target.id === 'approveBtn') {
-                        approveRecording();
-                    } else if (event.target.id === 'rejectBtn') {
-                        rejectRecording();
-                    }
+                document.getElementById('userFilter').addEventListener('input', function() {
+                    applyFilters();
                 });
+            });
+
+            function applyFilters() {
+                const languageFilter = document.getElementById('languageFilter').value;
+                const statusFilter = document.getElementById('statusFilter').value;
+                const userFilter = document.getElementById('userFilter').value.toLowerCase();
+
+                const filteredData = validationData.filter(recording => {
+                    const languageMatch = !languageFilter || recording.language === languageFilter;
+                    const statusMatch = !statusFilter || recording.status === statusFilter;
+                    const userMatch = !userFilter || recording.username.toLowerCase().includes(userFilter);
+                    
+                    return languageMatch && statusMatch && userMatch;
+                });
+
+                displayValidationData(filteredData);
+            }
+
+            function clearFilters() {
+                document.getElementById('languageFilter').value = '';
+                document.getElementById('statusFilter').value = '';
+                document.getElementById('userFilter').value = '';
+                displayValidationData(validationData);
+            }
+
+            // Modal buttons - use event delegation since modal might not be in DOM yet
+            document.addEventListener('click', function(event) {
+                if (event.target.id === 'approveBtn') {
+                    approveRecording();
+                } else if (event.target.id === 'rejectBtn') {
+                    rejectRecording();
+                }
             });
         </script>
     </body>
