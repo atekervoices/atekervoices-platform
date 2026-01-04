@@ -20,7 +20,14 @@ services:
       - SECRET_KEY=your-secret-key-change-this
       - DATABASE_URL=sqlite:////data/ateker_voices.db
       - UPLOAD_FOLDER=/app/output
-    command: python -m ateker_voices --ssl --cert-file /app/certs/server.crt --key-file /app/certs/server.key
+      - ADMIN_USERNAME=admin
+      - ADMIN_EMAIL=admin@atekervoices.com
+      - ADMIN_PASSWORD=AtekerAdmin2026!
+    command: >
+      bash -c "
+        python -m ateker_voices --init-db --create-admin &&
+        python -m ateker_voices --host 0.0.0.0 --port 443 
+      "
 
 volumes:
   ateker_recordings:

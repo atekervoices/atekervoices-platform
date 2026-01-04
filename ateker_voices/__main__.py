@@ -77,9 +77,22 @@ def main() -> None:
             if args.create_admin:
                 from getpass import getpass
                 
-                username = input("Enter admin username: ")
-                email = input("Enter admin email: ")
-                password = getpass("Enter admin password: ")
+                # Check if running in Docker (environment variables set)
+                admin_username = os.getenv('ADMIN_USERNAME')
+                admin_email = os.getenv('ADMIN_EMAIL') 
+                admin_password = os.getenv('ADMIN_PASSWORD')
+                
+                if admin_username and admin_email and admin_password:
+                    # Docker mode - use environment variables
+                    username = admin_username
+                    email = admin_email
+                    password = admin_password
+                    print(f"Creating admin user from environment variables: {username}")
+                else:
+                    # Interactive mode - prompt for input
+                    username = input("Enter admin username: ")
+                    email = input("Enter admin email: ")
+                    password = getpass("Enter admin password: ")
                 
                 # Check if user exists
                 existing_user = User.query.filter_by(username=username).first()
@@ -106,13 +119,19 @@ def main() -> None:
         print("Multi-user mode enabled with Flask authentication")
         print("Users will be organized in separate directories")
     
-    print(f"Starting Ateker Voices on http://{args.host}:{args.port}")
+    protocol = "https" if args.ssl else "http"
+    print(f"Starting Ateker Voices on {protocol}://{args.host}:{args.port}")
     print("Authentication: Flask-Login with SQLAlchemy")
     
     if args.ssl:
-        print("SSL enabled")
-        # SSL configuration would go here
-        print("Note: Full SSL configuration requires additional setup")
+        print("SSL enabled - UPDATED VERSION")
+        if not args.cert_file or not args.key_file:
+            print("Error: SSL certificate and key files required when --ssl is used")
+            sys.exit(1)
+        ssl_context = (args.cert_file, args.key_file)
+        print(f"SSL context configured with cert: {args.cert_file}, key: {args.key_file}")
+    else:
+        ssl_context = None
     
     # Run the Flask app
     try:
@@ -120,7 +139,7 @@ def main() -> None:
             host=args.host,
             port=args.port,
             debug=args.debug,
-            ssl_context=None  # Could be configured for SSL
+            ssl_context=ssl_context
         )
     except KeyboardInterrupt:
         print("\nShutting down gracefully...")

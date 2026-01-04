@@ -24,30 +24,53 @@ A comprehensive tool for recording and managing voice datasets for training Atek
 
 ## Quick Start with Docker (Recommended)
 
+### Option 1: Automated Setup (Windows/Linux)
+
+Run the setup script for your platform:
+
+**Windows:**
+```cmd
+setup-docker.bat
+```
+
+**Linux/Mac:**
+```bash
+chmod +x setup-docker.sh
+./setup-docker.sh
+```
+
+### Option 2: Manual Setup
+
 1. Clone the repository:
    ```bash
    git clone https://github.com/your-username/ateker-voices.git
    cd ateker-voices
    ```
 
-2. Create a `.env` file with your configuration:
-   ```env
-   # Database settings
-   DATABASE_URL=sqlite:////data/ateker_voices.db
-   
-   # Admin credentials (change these!)
-   ADMIN_USERNAME=admin
-   ADMIN_PASSWORD=change_this_password
-   ADMIN_EMAIL=admin@example.com
-   
-   # Application settings
-   SECRET_KEY=your-secret-key-change-this
-   UPLOAD_FOLDER=/app/output
-   MAX_CONTENT_LENGTH=200 * 1024 * 1024  # 200MB
+2. Start the application:
+   ```bash
+   docker-compose up --build -d
    ```
 
-3. Start the application:
-   ```bash
+3. Access the application:
+   - HTTP: http://localhost
+   - HTTPS: https://localhost
+
+### Default Admin Credentials
+
+The Docker setup automatically creates an admin user:
+
+- **Username:** admin
+- **Email:** admin@atekervoices.com  
+- **Password:** AtekerAdmin2026!
+
+> ⚠️ **Security Note:** Change the default admin password in production by updating the `ADMIN_PASSWORD` environment variable in `docker-compose.yml`.
+
+### Docker Commands
+
+- **View logs:** `docker-compose logs -f`
+- **Stop application:** `docker-compose down`
+- **Restart application:** `docker-compose restart`
    docker-compose up -d
    ```
 
