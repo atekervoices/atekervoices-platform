@@ -19,7 +19,7 @@ This application requires HTTPS to access the microphone in modern browsers. Her
    - Accept the self-signed certificate warning
    - Microphone should now work
 
-## Manual SSL Certificate Generation
+## Manual SSL Certificate Generation script
 
 If the script doesn't work, generate certificates manually:
 
