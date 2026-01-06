@@ -13,8 +13,8 @@
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
         <link href="{{ url_for('static', filename='css/fontawesome-all.min.css') }}" rel="stylesheet">
 
-        <script src="../js/wavesurfer.js"></script>
-        <script src="../js/wavesurfer.microphone.min.js"></script>
+        <script src="{{ url_for('static', filename='js/wavesurfer.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/wavesurfer.microphone.min.js') }}"></script>
         <style>
             body {
                 background: #f8f9fa;
@@ -292,22 +292,33 @@
          }
 
          function checkBrowserSupport() {
-             // Check if getUserMedia is supported
-             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                 setAlert('Your browser does not support microphone access. Please use a modern browser like Chrome, Firefox, or Edge.', 'alert-danger');
-                 q('#enable').disabled = true;
-                 return false;
-             }
-             
-             // Check if running on HTTPS
-             if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-                 setAlert('Microphone access requires HTTPS. Please access this site via HTTPS.', 'alert-danger');
-                 q('#enable').disabled = true;
-                 return false;
-             }
-             
-             return true;
-         }
+            console.log('Checking browser support...');
+            
+            // Check if getUserMedia is supported
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                console.error('getUserMedia not supported');
+                setAlert('Your browser does not support microphone access. Please use a modern browser like Chrome, Firefox, or Edge.', 'alert-danger');
+                q('#enable').disabled = true;
+                return false;
+            }
+            
+            // Check if running on HTTPS or localhost
+            const isSecure = location.protocol === 'https:' || 
+                           location.hostname === 'localhost' || 
+                           location.hostname === '127.0.0.1' ||
+                           location.hostname.startsWith('192.168.') ||
+                           location.hostname.startsWith('10.');
+            
+            if (!isSecure) {
+                console.error('Not on secure context:', location.protocol, location.hostname);
+                setAlert('Microphone access requires HTTPS. Please access this site via HTTPS.', 'alert-danger');
+                q('#enable').disabled = true;
+                return false;
+            }
+            
+            console.log('Browser support check passed');
+            return true;
+        }
 
          function stopRecording() {
             recording = false;
@@ -442,21 +453,42 @@
               });
 
               wavesurfer.microphone.on('deviceReady', function(stream) {
-                  if (MediaRecorder === undefined) {
-                      recorder = new window.MediaRecorder(stream);
-                  } else {
-                      recorder = new MediaRecorder(stream);
-                  }
+                console.log('Microphone device ready:', stream);
+                
+                try {
+                    if (MediaRecorder === undefined) {
+                        recorder = new window.MediaRecorder(stream);
+                    } else {
+                        recorder = new MediaRecorder(stream);
+                    }
+                    console.log('MediaRecorder created:', recorder);
 
-                  q('#record').disabled = false;
-                  setAlert('Microphone ready!', 'alert-success');
-              });
+                    q('#record').disabled = false;
+                    setAlert('Microphone ready! Click "Record" to start.', 'alert-success');
+                } catch (error) {
+                    console.error('Error creating MediaRecorder:', error);
+                    setAlert('Error setting up recorder: ' + error.message, 'alert-danger');
+                }
+            });
 
-              wavesurfer.microphone.on('deviceError', function(code) {
-                  recorder = null;
-                  q('#record').disabled = true;
-                  setAlert('Device error: ' + code, 'alert-danger');
-              });
+            wavesurfer.microphone.on('deviceError', function(code) {
+                console.error('Microphone device error:', code);
+                recorder = null;
+                q('#record').disabled = true;
+                q('#enable').disabled = false;
+                q('#enable').hidden = false;
+                q('#record').hidden = true;
+                
+                let errorMessage = 'Microphone error: ';
+                if (code === 'permission_denied') {
+                    errorMessage += 'Permission denied. Please allow microphone access and refresh the page.';
+                } else if (code === 'device_not_found') {
+                    errorMessage += 'No microphone found. Please connect a microphone.';
+                } else {
+                    errorMessage += code;
+                }
+                setAlert(errorMessage, 'alert-danger');
+            });
 
               q('[data-action="record"]')
                   .addEventListener('click', function() {
@@ -494,10 +526,20 @@
                   });
 
               q('[data-action="enable"]')
-                  .addEventListener('click', function() {
-                      wavesurfer.microphone.start();
-                      q('#record').hidden = false;
-                      q('#enable').hidden = true;
+                  .addEventListener('click', async function() {
+                      try {
+                          console.log('Attempting to enable microphone...');
+                          setAlert('Requesting microphone access...', 'alert-info');
+                          
+                          await wavesurfer.microphone.start();
+                          q('#record').hidden = false;
+                          q('#enable').hidden = true;
+                          
+                          console.log('Microphone enabled successfully');
+                      } catch (error) {
+                          console.error('Error enabling microphone:', error);
+                          setAlert('Failed to enable microphone: ' + error.message, 'alert-danger');
+                      }
                   });
           });
         </script>

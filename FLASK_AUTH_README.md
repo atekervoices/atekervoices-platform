@@ -57,7 +57,7 @@ The authentication system has been converted from Firebase authentication to Fla
 
 A default admin account is automatically created:
 - **Username**: `admin`
-- **Password**: `AtekerAdmin2025!`
+- **Password**: `AtekerAdmin2026!`
 - **Email**: `admin@atekervoices.org`
 
 ## Getting Started
