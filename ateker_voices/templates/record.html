@@ -324,7 +324,8 @@
             recording = false;
             recorder.stop();
 
-            blob = new Blob(chunks, { 'type' : 'audio/webm' });
+            // Create blob with the detected audio format for iOS compatibility
+            blob = new Blob(chunks, { 'type' : audioFormat });
 
             // Audio preview
             q('#clip').src = window.URL.createObjectURL(blob);
@@ -436,11 +437,24 @@
               q('#record').disabled = true;
               q('#submit').disabled = true;
 
-              const preferredFormat = 'audio/ogg; codecs=opus';
+              // Detect best audio format for current browser (especially iOS)
+              const preferredFormats = [
+                  'audio/mp4',
+                  'audio/webm;codecs=opus', 
+                  'audio/ogg;codecs=opus',
+                  'audio/wav'
+              ];
               const audio = document.createElement('audio');
-              audioFormat = audio.canPlayType(preferredFormat)
-                  ? preferredFormat
-                  : 'audio/wav';
+              
+              audioFormat = 'audio/wav'; // Default to WAV for iOS compatibility
+              for (const format of preferredFormats) {
+                  if (audio.canPlayType(format) !== '') {
+                      audioFormat = format;
+                      break;
+                  }
+              }
+              
+              console.log('Using audio format:', audioFormat);
 
               wavesurfer = WaveSurfer.create({
                   container: q('#waveform'),
@@ -456,10 +470,22 @@
                 console.log('Microphone device ready:', stream);
                 
                 try {
+                    // Configure MediaRecorder with iOS-compatible settings
+                    const options = {};
+                    
+                    // Set MIME type based on detected format
+                    if (audioFormat === 'audio/mp4') {
+                        options.mimeType = 'audio/mp4';
+                    } else if (audioFormat === 'audio/wav') {
+                        options.mimeType = 'audio/wav';
+                    }
+                    
+                    console.log('MediaRecorder options:', options);
+                    
                     if (MediaRecorder === undefined) {
-                        recorder = new window.MediaRecorder(stream);
+                        recorder = new window.MediaRecorder(stream, options);
                     } else {
-                        recorder = new MediaRecorder(stream);
+                        recorder = new MediaRecorder(stream, options);
                     }
                     console.log('MediaRecorder created:', recorder);
 
