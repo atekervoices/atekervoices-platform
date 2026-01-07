@@ -16,6 +16,10 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     last_login = db.Column(db.DateTime)
     
+    # Demographic fields
+    age_group = db.Column(db.String(20), nullable=True)  # 18-24, 25-34, 35-44, 45-54, 55+
+    gender = db.Column(db.String(10), nullable=True)  # male, female, other, prefer_not_to_say
+    
     # Relationships
     recordings = db.relationship('Recording', foreign_keys='Recording.user_id', backref='user', lazy=True, cascade='all, delete-orphan')
     

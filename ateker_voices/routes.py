@@ -83,6 +83,8 @@ def register():
         email = request.form.get('email')
         password = request.form.get('password')
         confirm_password = request.form.get('confirm_password')
+        age_group = request.form.get('age_group')
+        gender = request.form.get('gender')
         
         # Validation
         if not username or not email or not password:
@@ -103,6 +105,8 @@ def register():
         
         # Create new user
         user = User(username=username, email=email)
+        user.age_group = age_group
+        user.gender = gender
         user.set_password(password)
         db.session.add(user)
         db.session.commit()
