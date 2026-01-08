@@ -50,6 +50,182 @@
         </header>
         
         <div class="container-fluid mt-4">
+            <!-- Statistics Section -->
+            <div class="row mb-4">
+                <div class="col-md-8 mx-auto">
+                    <h3><i class="fas fa-chart-bar mr-2"></i>Platform Statistics</h3>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-8 mx-auto">
+                    <!-- Main Statistics Cards -->
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-users fa-3x text-primary mb-2"></i>
+                                    <h4 class="card-title">{{ stats.total_users }}</h4>
+                                    <p class="card-text">Total Users</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-microphone fa-3x text-primary mb-2"></i>
+                                    <h4 class="card-title">{{ stats.total_recordings }}</h4>
+                                    <p class="card-text">Total Recordings</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-check-circle fa-3x text-primary mb-2"></i>
+                                    <h4 class="card-title">{{ stats.approved_recordings }}</h4>
+                                    <p class="card-text">Approved</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-hourglass-half fa-3x text-primary mb-2"></i>
+                                    <h4 class="card-title">{{ stats.pending_recordings }}</h4>
+                                    <p class="card-text">Pending Review</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Detailed Statistics -->
+            <div class="row mb-4">
+                <div class="col-md-8 mx-auto">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-header text-center">
+                                    <h5 class="mb-0"><i class="fas fa-language mr-2"></i>Language Distribution</h5>
+                                </div>
+                                <div class="card-body text-center">
+                                    {% if stats.languages %}
+                                        {% for language, count in stats.languages.items() %}
+                                        <div class="d-flex justify-content-center align-items-center mb-2">
+                                            <span class="me-3"><strong>{{ language.upper() }}</strong></span>
+                                            <span class="badge bg-primary">{{ count }} recordings</span>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <p class="text-muted">No recordings available</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-header text-center">
+                                    <h5 class="mb-0"><i class="fas fa-chart-pie mr-2"></i>Validation Statistics</h5>
+                                </div>
+                                <div class="card-body text-center">
+                                    <div class="row text-center">
+                                        <div class="col-4">
+                                            <div class="mb-3">
+                                                <h5 class="text-primary">{{ validation_stats.approval_rate }}%</h5>
+                                                <small>Approval Rate</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="mb-3">
+                                                <h5 class="text-primary">{{ validation_stats.rejection_rate }}%</h5>
+                                                <small>Rejection Rate</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="mb-3">
+                                                <h5 class="text-primary">{{ validation_stats.total_validated }}</h5>
+                                                <small>Total Validated</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if stats.rejected_recordings > 0 %}
+                                    <div class="mt-3">
+                                        <small class="text-muted">Rejected recordings: {{ stats.rejected_recordings }}</small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Activity -->
+            <div class="row mb-4">
+                <div class="col-md-8 mx-auto">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-header text-center">
+                                    <h5 class="mb-0"><i class="fas fa-history mr-2"></i>Recent Recordings</h5>
+                                </div>
+                                <div class="card-body">
+                                    {% if recent_recordings %}
+                                        {% for recording in recent_recordings %}
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <div>
+                                                <small class="text-muted">{{ recording.submitted_date.strftime('%Y-%m-%d %H:%M') }}</small><br>
+                                                <span>{{ recording.language.upper() }} - {{ recording.prompt_text[:30] }}{% if recording.prompt_text|length > 30 %}...{% endif %}</span>
+                                            </div>
+                                            <span class="badge bg-{{ 'success' if recording.status == 'approved' else 'warning' if recording.status == 'pending' else 'danger' }}">
+                                                {{ recording.status.title() }}
+                                            </span>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <p class="text-muted text-center">No recent recordings</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-header text-center">
+                                    <h5 class="mb-0"><i class="fas fa-user-plus mr-2"></i>Recent Users</h5>
+                                </div>
+                                <div class="card-body">
+                                    {% if recent_users %}
+                                        {% for user in recent_users %}
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <div>
+                                                <strong>{{ user.username }}</strong><br>
+                                                <small class="text-muted">Joined {{ user.created_at.strftime('%Y-%m-%d') }}</small>
+                                            </div>
+                                            {% if user.is_admin %}
+                                            <span class="badge bg-danger">Admin</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">User</span>
+                                            {% endif %}
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <p class="text-muted text-center">No recent users</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <div class="row">
                 <div class="col-md-8 mx-auto">
                     <div class="card">
@@ -59,7 +235,7 @@
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <div class="card border-primary">
+                                    <div class="card">
                                         <div class="card-body text-center">
                                             <i class="fas fa-4x fa-list-alt text-primary mb-3"></i>
                                             <h5 class="card-title">Manage Prompts</h5>
@@ -72,9 +248,9 @@
                                 </div>
                                 
                                 <div class="col-md-4 mb-3">
-                                    <div class="card border-info">
+                                    <div class="card">
                                         <div class="card-body text-center">
-                                            <i class="fas fa-4x fa-clipboard-check text-info mb-3"></i>
+                                            <i class="fas fa-4x fa-clipboard-check text-primary mb-3"></i>
                                             <h5 class="card-title">Data Validation</h5>
                                             <p class="card-text">Review and validate recorded audio data for quality control</p>
                                             <a href="/admin/validation" class="btn btn-primary">

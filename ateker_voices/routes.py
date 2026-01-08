@@ -249,6 +249,44 @@ def submit():
 def admin():
     """Admin interface"""
     from .utils import load_prompts
+    from .models import Recording, User, DatasetExport
+    from datetime import datetime
+    
+    # Get basic statistics
+    stats = {
+        'total_users': User.query.count(),
+        'total_recordings': Recording.query.count(),
+        'approved_recordings': Recording.query.filter_by(status='approved').count(),
+        'rejected_recordings': Recording.query.filter_by(status='rejected').count(),
+        'pending_recordings': Recording.query.filter_by(status='pending').count(),
+    }
+    
+    # Get language statistics
+    language_stats = db.session.query(
+        Recording.language,
+        db.func.count(Recording.id).label('count')
+    ).group_by(Recording.language).all()
+    stats['languages'] = {lang: count for lang, count in language_stats}
+    
+    # Get recent activity
+    recent_recordings = Recording.query.order_by(Recording.submitted_date.desc()).limit(5).all()
+    recent_exports = DatasetExport.query.order_by(DatasetExport.export_date.desc()).limit(5).all()
+    recent_users = User.query.order_by(User.created_at.desc()).limit(5).all()
+    
+    # Get validation statistics
+    validation_stats = {
+        'total_validated': Recording.query.filter(Recording.status.in_(['approved', 'rejected'])).count(),
+        'approval_rate': 0,
+        'rejection_rate': 0
+    }
+    
+    if validation_stats['total_validated'] > 0:
+        validation_stats['approval_rate'] = round(
+            (stats['approved_recordings'] / validation_stats['total_validated']) * 100, 1
+        )
+        validation_stats['rejection_rate'] = round(
+            (stats['rejected_recordings'] / validation_stats['total_validated']) * 100, 1
+        )
     
     # Define only Ateker languages
     ateker_languages = {
@@ -264,6 +302,11 @@ def admin():
     
     return render_template(
         "admin.html",
+        stats=stats,
+        validation_stats=validation_stats,
+        recent_recordings=recent_recordings,
+        recent_exports=recent_exports,
+        recent_users=recent_users,
         languages=sorted(filtered_languages.items()),
     )
 
