@@ -52,9 +52,32 @@ class Recording(db.Model):
     validated_by = db.Column(db.Integer, db.ForeignKey('user.id'))
     validated_date = db.Column(db.DateTime)
     submitted_date = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    session_id = db.Column(db.String(36), nullable=False)  # UUID for session tracking
+    
+    # Add unique constraint to prevent duplicate recordings
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'language', 'prompt_group', 'prompt_id', name='unique_user_prompt'),
+    )
     
     def __repr__(self):
         return f'<Recording {self.id}: {self.language}_{self.prompt_group}_{self.prompt_id}>'
+
+
+class RecordingSession(db.Model):
+    """Recording session model to track user recording sessions."""
+    id = db.Column(db.String(36), primary_key=True)  # UUID
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    language = db.Column(db.String(10), nullable=False)
+    started_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    ended_at = db.Column(db.DateTime)
+    recordings_count = db.Column(db.Integer, default=0, nullable=False)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+    
+    # Relationships
+    user = db.relationship('User', backref='recording_sessions')
+    
+    def __repr__(self):
+        return f'<RecordingSession {self.id}: User {self.user_id}, {self.recordings_count} recordings>'
 
 
 class DatasetExport(db.Model):

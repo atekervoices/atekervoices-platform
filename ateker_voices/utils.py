@@ -40,6 +40,10 @@ def load_prompts(prompts_dirs: List[Path]) -> Tuple[Dict[str, List[Prompt]], Dic
                         with open(prompt_path, "r", encoding="utf-8") as prompt_file:
                             reader = csv.reader(prompt_file, delimiter="\t")
                             for i, row in enumerate(reader):
+                                # Skip empty rows
+                                if not row or len(row) == 0:
+                                    continue
+                                
                                 if len(row) == 1:
                                     prompt_id = str(i)
                                 else:

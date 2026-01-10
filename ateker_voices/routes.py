@@ -3,6 +3,9 @@ from flask_login import login_required, current_user, login_user, logout_user
 from werkzeug.utils import secure_filename
 import os
 import json
+import subprocess
+import tempfile
+import zipfile
 from datetime import datetime
 from pathlib import Path
 from . import db
@@ -134,38 +137,52 @@ def record():
     
     # Import recording functionality from utils
     from .utils import load_prompts, get_next_prompt
+    from .contribution_rules import ContributionRules
     
     prompts_dirs = [Path(current_app.config['UPLOAD_FOLDER']).parent / "prompts"]
     prompts, languages = load_prompts(prompts_dirs)
     
-    output_dir = Path(current_app.config['UPLOAD_FOLDER'])
-    audio_dir = output_dir / f"user_{current_user.id}" / language
+    # Get user progress and session info
+    user_progress = ContributionRules.get_user_progress(current_user.id, language)
     
-    next_prompt, num_complete, num_items = get_next_prompt(
-        prompts, audio_dir, language
-    )
-    
-    if next_prompt is None:
-        return render_template("done.html")
-    
-    complete_percent = 100 * (num_complete / num_items if num_items > 0 else 1)
-    return render_template(
-        "record.html",
-        language=language,
-        prompt_group=next_prompt.group,
-        prompt_id=next_prompt.id,
-        text=next_prompt.text,
-        num_complete=num_complete,
-        num_items=num_items,
-        complete_percent=complete_percent,
-        user_id=current_user.id,
-    )
+    # Get available prompts based on contribution rules
+    if language in prompts:
+        available_prompts = ContributionRules.get_available_prompts(
+            current_user.id, language, prompts[language]
+        )
+        
+        if not available_prompts:
+            return render_template("done.html", 
+                                 message="No available sentences remaining. Thank you for your contributions!")
+        
+        # Get the least saturated prompt
+        next_prompt_data = available_prompts[0]
+        next_prompt = next_prompt_data['prompt']
+        
+        # Get or create session
+        session = ContributionRules.get_or_create_session(current_user.id, language)
+        
+        return render_template(
+            "record.html",
+            language=language,
+            prompt_group=next_prompt.group,
+            prompt_id=next_prompt.id,
+            text=next_prompt.text,
+            user_progress=user_progress,
+            sentence_stats=next_prompt_data,
+            session_id=session.id,
+            user_id=current_user.id,
+        )
+    else:
+        flash('Language not found')
+        return redirect(url_for('main.index'))
 
 @bp.route('/submit', methods=['POST'])
 @login_required
 def submit():
-    """Submit audio for a text prompt"""
+    """Submit audio for a text prompt - Optimized version"""
     from .models import Recording
+    from .contribution_rules import ContributionRules
     
     language = request.form.get('language')
     prompt_group = request.form.get('promptGroup')
@@ -173,6 +190,15 @@ def submit():
     prompt_text = request.form.get('text')
     audio_format = request.form.get('format')
     duration = request.form.get('duration', 'unknown')
+    session_id = request.form.get('sessionId')
+    
+    # Quick validation before file processing
+    can_record, reason = ContributionRules.can_user_record_sentence(
+        current_user.id, language, prompt_group, prompt_id
+    )
+    
+    if not can_record:
+        return jsonify({'error': reason}), 400
     
     if 'audio' not in request.files:
         return jsonify({'error': 'No audio file provided'}), 400
@@ -195,14 +221,14 @@ def submit():
     filename = f"{prompt_id}{suffix}"
     audio_path = user_audio_dir / filename
     
-    # Save audio file
-    audio_file.save(audio_path)
-    
-    # Save transcription text
+    # Save files in parallel with database operation
     text_path = user_audio_dir / f"{prompt_id}.txt"
+    
+    # Batch file operations
+    audio_file.save(audio_path)
     text_path.write_text(prompt_text, encoding='utf-8')
     
-    # Save recording to database
+    # Save recording to database with session ID
     recording = Recording(
         user_id=current_user.id,
         language=language,
@@ -212,36 +238,50 @@ def submit():
         filename=filename,
         audio_format=audio_format,
         duration=duration,
-        file_size=audio_path.stat().st_size if audio_path.exists() else 0
+        file_size=audio_path.stat().st_size if audio_path.exists() else 0,
+        session_id=session_id
     )
     
     db.session.add(recording)
-    db.session.commit()
+    ContributionRules.update_session_progress(session_id)
+    db.session.commit()  # Single commit for both operations
     
-    # Get next prompt
-    from .utils import load_prompts, get_next_prompt
-    
+    # Get next available prompt (already optimized)
+    from .utils import load_prompts
     prompts_dirs = [Path(current_app.config['UPLOAD_FOLDER']).parent / "prompts"]
     prompts, languages = load_prompts(prompts_dirs)
     
-    next_prompt, num_complete, num_items = get_next_prompt(
-        prompts, user_audio_dir.parent.parent, language
+    available_prompts = ContributionRules.get_available_prompts(
+        current_user.id, language, prompts[language] if language in prompts else []
     )
     
-    current_app.logger.info(f"Progress: {num_complete}/{num_items} for user {current_user.id}, language {language}")
+    if not available_prompts:
+        return jsonify({'done': True, 'message': 'Session completed! No more sentences available.'})
     
-    if next_prompt is None:
-        return jsonify({'done': True})
+    # Check if current session is complete
+    user_progress = ContributionRules.get_user_progress(current_user.id, language)
+    session_complete = (
+        user_progress['active_session'] and 
+        user_progress['active_session']['recordings_in_session'] >= 5
+    )
     
-    complete_percent = 100 * (num_complete / num_items if num_items > 0 else 1)
+    if session_complete:
+        return jsonify({
+            'done': True, 
+            'message': f'Session complete! You recorded {user_progress["active_session"]["recordings_in_session"]} sentences. Start a new session to continue.'
+        })
+    
+    # Get next prompt
+    next_prompt_data = available_prompts[0]
+    next_prompt = next_prompt_data['prompt']
+    
     return jsonify({
         'done': False,
         'promptGroup': next_prompt.group,
         'promptId': next_prompt.id,
         'promptText': next_prompt.text,
-        'numComplete': num_complete,
-        'numItems': num_items,
-        'completePercent': complete_percent,
+        'user_progress': user_progress,
+        'sentence_stats': next_prompt_data,
     })
 
 @bp.route('/admin')
@@ -513,6 +553,44 @@ def delete_prompt():
         current_app.logger.error(f"Error deleting prompt: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
+@bp.route('/admin/delete_all_prompts', methods=['POST'])
+@admin_required
+def delete_all_prompts():
+    """Delete all default prompts"""
+    language = request.form.get('language')
+    
+    if not language:
+        return jsonify({'success': False, 'error': 'Language is required'})
+    
+    try:
+        prompts_dir = Path(current_app.config['UPLOAD_FOLDER']).parent / "prompts"
+        
+        # Find the actual language directory
+        actual_lang_dir = None
+        for item in prompts_dir.iterdir():
+            if item.is_dir() and item.name.endswith(f"_{language}"):
+                actual_lang_dir = item
+                break
+        
+        if not actual_lang_dir:
+            return jsonify({'success': False, 'error': 'Language directory not found'})
+        
+        # Delete all .txt files in the language directory
+        deleted_files = []
+        for txt_file in actual_lang_dir.glob("*.txt"):
+            txt_file.unlink()
+            deleted_files.append(txt_file.name)
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Deleted {len(deleted_files)} prompt files from {language}',
+            'deleted_files': deleted_files
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error deleting all prompts: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
 @bp.route('/audio/<path:filepath>')
 @login_required
 def serve_audio(filepath):
@@ -530,3 +608,112 @@ def serve_audio(filepath):
         return jsonify({'error': 'Audio file not found'}), 404
     
     return send_from_directory(str(output_dir), filepath)
+
+@bp.route('/templates/import_template.csv')
+@login_required
+def download_csv_template():
+    """Download CSV template for bulk prompt import"""
+    from flask import send_from_directory
+    
+    template_dir = os.path.join(current_app.root_path, 'templates')
+    return send_from_directory(template_dir, 'import_template.csv', as_attachment=True, download_name='import_template.csv')
+
+@bp.route('/admin/export', methods=['POST'])
+@admin_required
+def export_dataset():
+    """Export dataset using existing export_dataset module"""
+    try:
+        # Get export parameters
+        user_filter = request.form.get('user_filter', 'all')
+        language_filter = request.form.get('language_filter', 'all')
+        
+        # Get base paths
+        output_dir = Path(current_app.config['UPLOAD_FOLDER'])
+        export_dir = output_dir.parent / "exports"
+        export_dir.mkdir(exist_ok=True)
+        
+        # Create export directory with timestamp
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        export_path = export_dir / f"export_{timestamp}"
+        export_path.mkdir(exist_ok=True)
+        
+        # Determine input directory based on filters
+        if user_filter == 'all':
+            input_dir = output_dir
+        else:
+            input_dir = output_dir / f"user_{user_filter}"
+        
+        # Run the export dataset command
+        cmd = [
+            'python', '-m', 'export_dataset',
+            str(input_dir),
+            str(export_path),
+            '--threshold', '0.5'
+        ]
+        
+        result = subprocess.run(cmd, capture_output=True, text=True, cwd=str(output_dir.parent))
+        
+        if result.returncode != 0:
+            current_app.logger.error(f"Export failed: {result.stderr}")
+            return jsonify({'success': False, 'error': 'Export process failed'}), 500
+        
+        # Create ZIP file for download
+        zip_path = export_dir / f"ateker_voices_export_{timestamp}.zip"
+        current_app.logger.info(f"Creating ZIP file at: {zip_path}")
+        
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            file_count = 0
+            for file_path in export_path.rglob('*'):
+                if file_path.is_file():
+                    arcname = file_path.relative_to(export_path)
+                    zipf.write(file_path, arcname)
+                    file_count += 1
+            current_app.logger.info(f"Added {file_count} files to ZIP")
+        
+        # Check ZIP file size
+        zip_size = zip_path.stat().st_size
+        current_app.logger.info(f"ZIP file created with size: {zip_size} bytes")
+        
+        # Clean up export directory
+        import shutil
+        shutil.rmtree(export_path, ignore_errors=True)
+        current_app.logger.info("Cleaned up temporary export directory")
+        
+        return jsonify({
+            'success': True,
+            'download_url': f'/admin/download_export/{zip_path.name}',
+            'message': 'Export completed successfully'
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Export error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@bp.route('/admin/download_export/<filename>')
+@admin_required
+def download_export(filename):
+    """Download exported dataset"""
+    try:
+        output_dir = Path(current_app.config['UPLOAD_FOLDER'])
+        export_dir = output_dir.parent / "exports"
+        file_path = export_dir / filename
+        
+        current_app.logger.info(f"Download request for: {file_path}")
+        
+        if not file_path.exists():
+            current_app.logger.error(f"Export file not found: {file_path}")
+            return jsonify({'error': 'Export file not found'}), 404
+        
+        file_size = file_path.stat().st_size
+        current_app.logger.info(f"Serving file with size: {file_size} bytes")
+        
+        return send_file(
+            file_path,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/zip'
+        )
+        
+    except Exception as e:
+        current_app.logger.error(f"Download error: {e}")
+        return jsonify({'error': 'Download failed'}), 500

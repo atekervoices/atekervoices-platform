@@ -155,17 +155,105 @@
             <input id="promptGroup" type="hidden" name="promptGroup" value="{{ prompt_group }}">
             <input id="promptId" type="hidden" name="promptId" value="{{ prompt_id }}">
             <input id="promptText" type="hidden" name="text" value="{{ text }}">
+            <input id="sessionId" type="hidden" name="sessionId" value="{{ session_id }}">
 
             <div class="container-fluid mt-3">
                 <div class="row">
                     <div class="col-lg-10 col-md-8 mx-auto">
                         <div id="alert" class="alert alert-info">Waiting for microphone to be enabled</div>
 
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card border-info">
+                                    <div class="card-header bg-info text-white">
+                                        <h6 class="mb-0"><i class="fas fa-chart-line mr-2"></i>Recording Session Progress</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        {% if user_progress.active_session %}
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <small class="text-muted">Session Progress</small>
+                                                <div class="d-flex align-items-center">
+                                                    <span class="h4 mb-0">{{ user_progress.active_session.recordings_in_session }}</span>
+                                                    <span class="text-muted mx-2">/</span>
+                                                    <span class="text-muted">{{ user_progress.active_session.max_per_session }} sentences</span>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <small class="text-muted">Session Completion</small>
+                                                <div class="progress" style="height: 10px;">
+                                                    <div class="progress-bar bg-info session-progress-bar" role="progressbar" 
+                                                         data-width="{{ user_progress.active_session.session_percent|round|int }}"
+                                                         aria-valuenow="{{ user_progress.active_session.session_percent|round|int }}" 
+                                                         aria-valuemin="0" aria-valuemax="100">
+                                                    </div>
+                                                </div>
+                                                <small class="text-muted">{{ user_progress.active_session.session_percent|round|int }}% Complete</small>
+                                            </div>
+                                        </div>
+                                        {% else %}
+                                        <p class="text-muted mb-0">Starting new session...</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card border-success">
+                                    <div class="card-header bg-success text-white">
+                                        <h6 class="mb-0"><i class="fas fa-info-circle mr-2"></i>Contribution Rules</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <h6><i class="fas fa-user mr-2 text-primary"></i>One Recording Per Sentence</h6>
+                                                <p class="small text-muted">Each person can record any given sentence only once to prevent voice bias.</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6><i class="fas fa-users mr-2 text-success"></i>Sentence Saturation</h6>
+                                                <p class="small text-muted">Sentences are retired after 5 recordings from different people.</p>
+                                            </div>
+                                        </div>
+                                        {% if sentence_stats %}
+                                        <hr>
+                                        <div class="row">
+                                            <div class="col-12">
+                                                <h6><i class="fas fa-chart-bar mr-2 text-warning"></i>Current Sentence Progress</h6>
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <span class="small">Recordings: {{ sentence_stats.recordings_count }}/5</span>
+                                                    <span class="badge bg-{{ 'success' if sentence_stats.saturation_percent < 50 else 'warning' if sentence_stats.saturation_percent < 80 else 'danger' }}">
+                                                        {{ sentence_stats.saturation_percent|round|int }}% Full
+                                                    </span>
+                                                </div>
+                                                <div class="progress" style="height: 8px;">
+                                                    <div class="progress-bar bg-{{ 'success' if sentence_stats.saturation_percent < 50 else 'warning' if sentence_stats.saturation_percent < 80 else 'danger' }} sentence-progress-bar" 
+                                                         role="progressbar" 
+                                                         data-width="{{ sentence_stats.saturation_percent|round|int }}"
+                                                         aria-valuenow="{{ sentence_stats.saturation_percent|round|int }}" 
+                                                         aria-valuemin="0" aria-valuemax="100">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="row text-center mb-4">
                             <div class="col-12">
                                 <p class="lead">
                                     Record yourself speaking the text below. You can play it back or re-record before submitting.
                                 </p>
+                                {% if user_progress.active_session %}
+                                <p class="text-muted">
+                                    <i class="fas fa-lightbulb mr-2"></i>
+                                    Sessions are typically 5 sentences. You can continue for as many sessions as you wish!
+                                </p>
+                                {% endif %}
                             </div>
                         </div>
 
@@ -233,20 +321,38 @@
                             </div>
                         </div>
 
-                        <div class="row">
+                        <div class="row mb-4">
                             <div class="col-12">
                                 <div class="card">
                                     <div class="card-body">
                                         <div class="row">
-                                            <div class="col-md-6">
-                                                <label for="complete_percent">Progress: <span id="numComplete">{{ num_complete }}</span> / <span id="numItems">{{ num_items }}</span></label>
+                                            <div class="col-md-4">
+                                                <label class="text-muted">Your Total Recordings</label>
+                                                <div class="h5 text-primary">{{ user_progress.total_recordings }}</div>
                                             </div>
-                                            <div class="col-md-6 text-right">
-                                                <small class="text-muted">{{ (complete_percent | int) }}% Complete</small>
+                                            <div class="col-md-4">
+                                                {% if user_progress.active_session %}
+                                                <label class="text-muted">Session Progress</label>
+                                                <div class="h5 text-info">{{ user_progress.active_session.recordings_in_session }}/{{ user_progress.active_session.max_per_session }}</div>
+                                                {% else %}
+                                                <label class="text-muted">Session Progress</label>
+                                                <div class="h5 text-muted">New Session</div>
+                                                {% endif %}
                                             </div>
-                                        </div>
-                                        <div class="progress mt-2" style="height: 1rem;">
-                                            <div id="progressComplete" class="progress-bar" role="progressbar" aria-valuenow="{{ complete_percent | int }}" aria-valuemin="0" aria-valuemax="100" style="width: {{ complete_percent | int }}%;"></div>
+                                            <div class="col-md-4 text-right">
+                                                {% if user_progress.active_session %}
+                                                <small class="text-muted">Session Complete</small>
+                                                <div class="progress mt-1" style="height: 8px;">
+                                                    <div class="progress-bar bg-info session-progress-bar" role="progressbar" 
+                                                         data-width="{{ user_progress.active_session.session_percent|round|int }}"
+                                                         aria-valuenow="{{ user_progress.active_session.session_percent|round|int }}" 
+                                                         aria-valuemin="0" aria-valuemax="100">
+                                                    </div>
+                                                </div>
+                                                {% else %}
+                                                <small class="text-muted">Ready to start</small>
+                                                {% endif %}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -384,11 +490,53 @@
                 q('#promptText').value = result.promptText;
                 q('#text').value = result.promptText;
 
-                console.log('Updating progress:', result.numComplete, '/', result.numItems); // Debug logging
-                q('#numComplete').textContent = result.numComplete;
-                q('#numItems').textContent = result.numItems;
-                q('#progressComplete').setAttribute('aria-valuenow', Math.round(result.completePercent));
-                q('#progressComplete').style.width = Math.round(result.completePercent) + '%';
+                // Update session progress if available
+                if (result.user_progress && result.user_progress.active_session) {
+                    const session = result.user_progress.active_session;
+                    // Update session progress displays
+                    const sessionElements = document.querySelectorAll('.session-progress');
+                    sessionElements.forEach(el => {
+                        el.textContent = `${session.recordings_in_session}/${session.max_per_session}`;
+                    });
+                    
+                    // Update progress bars
+                    const progressBars = document.querySelectorAll('.session-progress-bar');
+                    progressBars.forEach(bar => {
+                        bar.style.width = session.session_percent + '%';
+                        bar.setAttribute('data-width', Math.round(session.session_percent));
+                        bar.setAttribute('aria-valuenow', Math.round(session.session_percent));
+                    });
+                    
+                    // Update percentage displays
+                    const percentElements = document.querySelectorAll('.session-percent');
+                    percentElements.forEach(el => {
+                        el.textContent = Math.round(session.session_percent) + '%';
+                    });
+                }
+                
+                // Update sentence statistics if available
+                if (result.sentence_stats) {
+                    const stats = result.sentence_stats;
+                    // Update sentence progress displays
+                    const sentenceCountElements = document.querySelectorAll('.sentence-count');
+                    sentenceCountElements.forEach(el => {
+                        el.textContent = `${stats.recordings_count}/5`;
+                    });
+                    
+                    // Update sentence progress bars
+                    const sentenceBars = document.querySelectorAll('.sentence-progress-bar');
+                    sentenceBars.forEach(bar => {
+                        bar.style.width = stats.saturation_percent + '%';
+                        bar.setAttribute('data-width', Math.round(stats.saturation_percent));
+                        bar.setAttribute('aria-valuenow', Math.round(stats.saturation_percent));
+                    });
+                    
+                    // Update sentence percentage and badge
+                    const sentencePercentElements = document.querySelectorAll('.sentence-percent');
+                    sentencePercentElements.forEach(el => {
+                        el.textContent = Math.round(stats.saturation_percent) + '% Full';
+                    });
+                }
 
                 // Reset UI state for next recording
                 q('#submittedIcon').hidden = true;
@@ -433,6 +581,23 @@
               if (!checkBrowserSupport()) {
                   return;
               }
+              
+              // Initialize progress bars from data attributes
+              const sessionProgressBars = document.querySelectorAll('.session-progress-bar');
+              sessionProgressBars.forEach(bar => {
+                  const width = bar.getAttribute('data-width');
+                  if (width) {
+                      bar.style.width = width + '%';
+                  }
+              });
+              
+              const sentenceProgressBars = document.querySelectorAll('.sentence-progress-bar');
+              sentenceProgressBars.forEach(bar => {
+                  const width = bar.getAttribute('data-width');
+                  if (width) {
+                      bar.style.width = width + '%';
+                  }
+              });
               
               q('#record').disabled = true;
               q('#submit').disabled = true;

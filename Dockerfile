@@ -10,7 +10,12 @@ WORKDIR /app
 
 # Copy requirements first to leverage Docker cache
 COPY requirements.txt .
+COPY requirements_export.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements_export.txt
+
+# Install ffmpeg for audio processing
+RUN apt-get update && apt-get install -y ffmpeg
 
 # Copy the application code
 COPY . .

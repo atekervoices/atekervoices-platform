@@ -35,8 +35,78 @@
         </header>
         <div class="container-fluid mt-3">
             <div class="row-fluid">
-                <div id="alert" class="alert alert-success">All done, thank you!</div>
+                <div class="col-md-8 mx-auto">
+                    {% if message %}
+                    <div id="alert" class="alert alert-info">{{ message }}</div>
+                    {% else %}
+                    <div id="alert" class="alert alert-success">All done, thank you!</div>
+                    {% endif %}
+                    
+                    <div class="card mt-4">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">
+                                <i class="fas fa-check-circle text-success mr-2"></i>
+                                Recording Session Complete
+                            </h5>
+                            <p class="card-text">
+                                {% if message %}
+                                {{ message }}
+                                {% else %}
+                                Thank you for your contribution to the Ateker Voices project!
+                                {% endif %}
+                            </p>
+                            <div class="mt-4">
+                                <a href="{{ url_for('main.index') }}" class="btn btn-primary">
+                                    <i class="fas fa-home mr-2"></i>
+                                    Return to Home
+                                </a>
+                                {% if current_user.is_authenticated %}
+                                <button onclick="startNewSession()" class="btn btn-success ml-2">
+                                    <i class="fas fa-plus mr-2"></i>
+                                    Start New Session
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-3">
+                        <div class="card-body">
+                            <h6 class="card-title">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                About Contribution Rules
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="small text-muted mb-2">
+                                        <i class="fas fa-user mr-1"></i>
+                                        <strong>One Recording Per Sentence:</strong> Each person can record any given sentence only once to prevent voice bias.
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="small text-muted mb-2">
+                                        <i class="fas fa-users mr-1"></i>
+                                        <strong>Sentence Saturation:</strong> Sentences are retired after 5 recordings from different people.
+                                    </p>
+                                </div>
+                            </div>
+                            <p class="small text-muted mb-0">
+                                <i class="fas fa-redo mr-1"></i>
+                                <strong>Sessions:</strong> You can start new sessions and continue contributing as many times as you wish!
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+        
+        {% if current_user.is_authenticated %}
+        <script>
+            function startNewSession() {
+                // Redirect to record page to start a new session
+                window.location.href = "{{ url_for('main.record') }}?language={{ request.args.get('language', 'kdj') }}";
+            }
+        </script>
+        {% endif %}
     </body>
 </html>

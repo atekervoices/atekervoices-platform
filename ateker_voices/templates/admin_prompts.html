@@ -76,6 +76,13 @@
                                 {% endfor %}
                             </select>
                         </div>
+                        {% if language %}
+                        <div class="mt-3">
+                            <button class="btn btn-danger btn-sm w-100" onclick="deleteAllPrompts()">
+                                <i class="fas fa-trash-alt mr-1"></i>Delete All Prompts
+                            </button>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -475,6 +482,41 @@
                 }
 
                 return result;
+            }
+
+            async function deleteAllPrompts() {
+                const language = document.getElementById('languageSelect').value;
+                
+                if (!language) {
+                    alert('Please select a language first');
+                    return;
+                }
+                
+                if (!confirm(`Are you sure you want to delete ALL prompts for ${language}? This action cannot be undone.`)) {
+                    return;
+                }
+                
+                try {
+                    const formData = new FormData();
+                    formData.append('language', language);
+                    
+                    const response = await fetch('/admin/delete_all_prompts', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        alert(result.message);
+                        // Reload the page to refresh the prompts list
+                        window.location.reload();
+                    } else {
+                        alert('Error: ' + result.error);
+                    }
+                } catch (error) {
+                    alert('Error deleting prompts: ' + error.message);
+                }
             }
         </script>
         </main>
