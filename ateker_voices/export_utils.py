@@ -71,8 +71,14 @@ class DatasetExporter:
                 
             # Add metadata if requested
             if include_metadata:
-                for meta_file in lang_dir.rglob('*.json'):
-                    if meta_file.stem in ['metadata', 'validation']:
+                # Look for both CSV and JSON metadata files
+                for meta_file in lang_dir.rglob('metadata.*'):
+                    if meta_file.suffix in ['.csv', '.json']:
+                        zf.write(meta_file, meta_file.relative_to(self.output_dir))
+                
+                # Also include validation files if they exist
+                for meta_file in lang_dir.rglob('validation.*'):
+                    if meta_file.suffix in ['.csv', '.json']:
                         zf.write(meta_file, meta_file.relative_to(self.output_dir))
         
         memory_file.seek(0)
@@ -83,24 +89,45 @@ class DatasetExporter:
         output = io.StringIO()
         writer = csv.writer(output)
         
-        # Write header
-        writer.writerow(['id', 'text', 'audio_file', 'speaker_id', 'duration', 'quality'])
+        # Process metadata file if exists (check both CSV and JSON)
+        metadata_file = None
+        for ext in ['.csv', '.json']:
+            potential_file = lang_dir / f'metadata{ext}'
+            if potential_file.exists():
+                metadata_file = potential_file
+                break
         
-        # Process metadata file if exists
-        metadata_file = lang_dir / 'metadata.json'
-        if metadata_file.exists():
-            with open(metadata_file, 'r', encoding='utf-8') as f:
-                metadata = json.load(f)
-                
-            for rec_id, rec_data in metadata.items():
+        if metadata_file:
+            if metadata_file.suffix == '.csv':
+                # If it's already a CSV, just copy its content
+                with open(metadata_file, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    output.write(content)
+            else:
+                # If it's JSON, convert to CSV
+                with open(metadata_file, 'r', encoding='utf-8') as f:
+                    metadata = json.load(f)
+                    
+                # Write header for simplified format with validation status
                 writer.writerow([
-                    rec_id,
-                    rec_data.get('text', ''),
-                    rec_data.get('audio_file', ''),
-                    rec_data.get('speaker_id', ''),
-                    rec_data.get('duration', ''),
-                    rec_data.get('quality', '')
+                    'id', 'text', 'audio_file', 'speaker_id', 'age', 'gender', 'status'
                 ])
+                
+                for rec_id, rec_data in metadata.items():
+                    writer.writerow([
+                        rec_id,
+                        rec_data.get('text', ''),
+                        rec_data.get('audio_file', ''),  # This should already be relative from wav folder
+                        rec_data.get('speaker_id', ''),
+                        rec_data.get('age', ''),
+                        rec_data.get('gender', ''),
+                        rec_data.get('status', 'pending')  # Add validation status
+                    ])
+        else:
+            # Write header even if no metadata exists
+            writer.writerow([
+                'id', 'text', 'audio_file', 'speaker_id', 'age', 'gender', 'status'
+            ])
         
         # Convert to bytes and return
         output.seek(0)
@@ -114,20 +141,61 @@ class DatasetExporter:
             'metadata': {}
         }
         
-        # Process metadata file if exists
-        metadata_file = lang_dir / 'metadata.json'
-        if metadata_file.exists():
-            with open(metadata_file, 'r', encoding='utf-8') as f:
-                result['recordings'] = [
-                    {'id': k, **v} for k, v in json.load(f).items()
-                ]
+        # Process metadata file if exists (check both CSV and JSON)
+        metadata_file = None
+        for ext in ['.csv', '.json']:
+            potential_file = lang_dir / f'metadata{ext}'
+            if potential_file.exists():
+                metadata_file = potential_file
+                break
+        
+        if metadata_file:
+            if metadata_file.suffix == '.json':
+                # If it's JSON, load directly
+                with open(metadata_file, 'r', encoding='utf-8') as f:
+                    result['recordings'] = [
+                        {'id': k, **v} for k, v in json.load(f).items()
+                    ]
+            else:
+                # If it's CSV, convert to JSON format
+                with open(metadata_file, 'r', encoding='utf-8') as f:
+                    reader = csv.reader(f)
+                    header = next(reader)  # Skip header
+                    for row in reader:
+                        if len(row) >= 2:  # At least id and text
+                            recording_data = {
+                                'id': row[0],
+                                'text': row[1] if len(row) > 1 else '',
+                                'audio_file': row[2] if len(row) > 2 else '',  # Should be relative from wav folder
+                                'speaker_id': row[3] if len(row) > 3 else '',
+                            }
+                            # Add essential speaker metadata if available
+                            if len(row) > 4:
+                                recording_data['age'] = row[4] if len(row) > 4 else ''
+                            if len(row) > 5:
+                                recording_data['gender'] = row[5] if len(row) > 5 else ''
+                            # Add validation status if available
+                            if len(row) > 6:
+                                recording_data['status'] = row[6] if len(row) > 6 else 'pending'
+                            
+                            result['recordings'].append(recording_data)
         
         # Include validation data if requested
         if include_metadata:
-            validation_file = lang_dir / 'validation.json'
-            if validation_file.exists():
-                with open(validation_file, 'r', encoding='utf-8') as f:
-                    result['validation'] = json.load(f)
+            for ext in ['.csv', '.json']:
+                validation_file = lang_dir / f'validation{ext}'
+                if validation_file.exists():
+                    with open(validation_file, 'r', encoding='utf-8') as f:
+                        if validation_file.suffix == '.json':
+                            result['validation'] = json.load(f)
+                        else:
+                            # Convert CSV validation to JSON format
+                            reader = csv.reader(f)
+                            header = next(reader)
+                            result['validation'] = [
+                                dict(zip(header, row)) for row in reader
+                            ]
+                    break
         
         # Convert to bytes and return
         return io.BytesIO(json.dumps(result, indent=2, ensure_ascii=False).encode('utf-8'))

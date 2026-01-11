@@ -19,6 +19,8 @@ class User(UserMixin, db.Model):
     # Demographic fields
     age_group = db.Column(db.String(20), nullable=True)  # 18-24, 25-34, 35-44, 45-54, 55+
     gender = db.Column(db.String(10), nullable=True)  # male, female, other, prefer_not_to_say
+    region = db.Column(db.String(50), nullable=True)  # Geographic region
+    dialect = db.Column(db.String(50), nullable=True)  # Specific dialect
     
     # Relationships
     recordings = db.relationship('Recording', foreign_keys='Recording.user_id', backref='user', lazy=True, cascade='all, delete-orphan')

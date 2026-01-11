@@ -4,6 +4,8 @@ import logging
 import shutil
 import subprocess
 import threading
+import sys
+import os
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -14,6 +16,165 @@ from .vad import SileroVoiceActivityDetector
 
 _DIR = Path(__file__).parent
 _LOGGER = logging.getLogger(__name__)
+
+
+def get_user_database_info():
+    """Get user information and validation status from database"""
+    try:
+        # Add parent directory to sys.path to import Flask app
+        sys.path.insert(0, str(_DIR.parent))
+        
+        # Import Flask app and models
+        from ateker_voices import create_app
+        from ateker_voices.models import User, Recording
+        
+        # Create app context
+        app = create_app()
+        with app.app_context():
+            # Query all users and create mapping
+            users = User.query.all()
+            user_mapping = {}
+            
+            for user in users:
+                user_mapping[user.id] = {
+                    'speaker_id': f"user_{user.id}",
+                    'age': user.age_group or '',
+                    'gender': user.gender or '',
+                    'username': user.username,
+                    'email': user.email
+                }
+            
+            # Query all recordings for validation status from database
+            recordings = Recording.query.all()
+            recording_status = {}
+            
+            for recording in recordings:
+                # Create unique key that matches the export format: user_X/language/group/prompt_id.wav
+                rec_key = f"user_{recording.user_id}/{recording.language}/{recording.prompt_group}/{recording.prompt_id}.wav"
+                recording_status[rec_key] = {
+                    'status': recording.status,
+                    'validation_notes': recording.validation_notes or '',
+                    'validated_by': recording.validated_by,
+                    'validated_date': recording.validated_date.isoformat() if recording.validated_date else ''
+                }
+                _LOGGER.info(f"Database mapping: {rec_key} -> status: {recording.status}")
+            
+            return user_mapping, recording_status
+            
+    except Exception as e:
+        _LOGGER.warning(f"Could not load user database: {e}")
+        return {}, {}
+
+
+def load_validation_status(input_dir: Path) -> dict:
+    """Load validation status from JSON files"""
+    validation_status = {}
+    
+    try:
+        # Check both input_dir and output directory for validation files
+        directories_to_check = [input_dir, input_dir.parent / "output"]
+        
+        for base_dir in directories_to_check:
+            if not base_dir.exists():
+                continue
+                
+            _LOGGER.info(f"Looking for validation files in: {base_dir}")
+            
+            # Look for validation_status.json files in language directories
+            for user_dir in base_dir.iterdir():
+                if not user_dir.is_dir() or not user_dir.name.startswith('user_'):
+                    continue
+                    
+                for lang_dir in user_dir.iterdir():
+                    if not lang_dir.is_dir():
+                        continue
+                        
+                    status_file = lang_dir / "validation_status.json"
+                    if status_file.exists():
+                        try:
+                            with open(status_file, 'r', encoding='utf-8') as f:
+                                status_data = json.load(f)
+                            
+                            _LOGGER.info(f"Found validation file: {status_file}")
+                            
+                            # Process each recording in the status file
+                            for recording_key, recording_info in status_data.get("recordings", {}).items():
+                                # Extract prompt_id from recording_key (format: "group_promptid")
+                                prompt_id = recording_key.split('_')[-1]
+                                
+                                # Find the audio file
+                                for root, dirs, files in os.walk(lang_dir):
+                                    for file in files:
+                                        if file.endswith(('.wav', '.webm')) and prompt_id in file:
+                                            audio_path = Path(root) / file
+                                            # Create relative key from input_dir
+                                            relative_path = audio_path.relative_to(base_dir)
+                                            # Convert to WAV format for export
+                                            wav_path = str(relative_path).replace('.webm', '.wav')
+                                            validation_status[wav_path] = {
+                                                'status': recording_info.get('status', 'pending'),
+                                                'validation_notes': recording_info.get('validation_notes', ''),
+                                                'validated_by': recording_info.get('validated_by', ''),
+                                                'validated_date': recording_info.get('validated_date', '')
+                                            }
+                                            _LOGGER.info(f"Mapped {wav_path} -> status: {recording_info.get('status', 'pending')}")
+                                            break
+                                    if wav_path in validation_status:
+                                        break
+                                        
+                        except Exception as e:
+                            _LOGGER.warning(f"Could not read validation file {status_file}: {e}")
+                            continue
+        
+        _LOGGER.info(f"Loaded validation status for {len(validation_status)} recordings")
+        return validation_status
+        
+    except Exception as e:
+        _LOGGER.warning(f"Could not load validation status: {e}")
+        return {}
+
+
+def extract_speaker_info(audio_path: Path, input_dir: Path, user_mapping: dict) -> dict:
+    """Extract speaker information from file path and database"""
+    try:
+        # Default speaker info
+        speaker_info = {
+            'speaker_id': 'unknown',
+            'age': '',
+            'gender': ''
+        }
+        
+        # Try to extract user ID from path structure: user_X/language/prompt_group/
+        path_parts = audio_path.relative_to(input_dir).parts
+        user_id_str = None
+        
+        for part in path_parts:
+            if part.startswith('user_'):
+                user_id_str = part.replace('user_', '')
+                break
+        
+        if user_id_str and user_id_str.isdigit():
+            user_id = int(user_id_str)
+            if user_id in user_mapping:
+                # Use database information
+                speaker_info = user_mapping[user_id].copy()
+                _LOGGER.info(f"Found user {user_id} in database: {speaker_info}")
+            else:
+                # User not found in database, use path info
+                speaker_info['speaker_id'] = f"user_{user_id}"
+                _LOGGER.warning(f"User {user_id} not found in database, using path info")
+        else:
+            _LOGGER.warning(f"Could not extract user ID from path: {audio_path}")
+        
+        return speaker_info
+        
+    except Exception as e:
+        _LOGGER.warning(f"Could not extract speaker info for {audio_path}: {e}")
+        return {
+            'speaker_id': 'unknown',
+            'age': '',
+            'gender': ''
+        }
 
 
 def main():
@@ -48,11 +209,20 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
     wav_dir = output_dir / "wav"
 
-    export_audio = ExportAudio()
+    # Load user information and validation status from database
+    print("Loading user information and validation status from database...")
+    user_mapping, recording_status = get_user_database_info()
+    print(f"Loaded {len(user_mapping)} users and {len(recording_status)} recording statuses from database")
+
+    export_audio = ExportAudio(user_mapping, recording_status)
     with open(
         output_dir / "metadata.csv", "w", encoding="utf-8"
     ) as metadata_file, ThreadPoolExecutor() as executor:
-        writer = csv.writer(metadata_file, delimiter="|")
+        # Write header with speaker metadata and validation status
+        writer = csv.writer(metadata_file, delimiter=",")
+        writer.writerow([
+            "id", "text", "audio_file", "speaker_id", "age", "gender", "status"
+        ])
         writer_lock = threading.Lock()
         for audio_path in input_dir.rglob(args.audio_glob):
             executor.submit(
@@ -67,7 +237,9 @@ def main():
 
 
 class ExportAudio:
-    def __init__(self):
+    def __init__(self, user_mapping: dict, recording_status: dict):
+        self.user_mapping = user_mapping
+        self.recording_status = recording_status
         self.thread_data = threading.local()
 
     def __call__(
@@ -160,8 +332,25 @@ class ExportAudio:
                 subprocess.check_call(command, stderr=subprocess.DEVNULL)
 
             with writer_lock:
-                # id|text
-                writer.writerow((wav_id, text))
+                # Extract speaker information from database
+                speaker_info = extract_speaker_info(audio_path, input_dir, self.user_mapping)
+                
+                # Get validation status from database
+                # Use wav_id as key to match recording_status mapping
+                rec_key = str(wav_id)  # This is already the relative path from wav folder
+                validation_info = self.recording_status.get(rec_key, {})
+                status = validation_info.get('status', 'pending')
+                
+                # Write row with essential metadata and validation status
+                writer.writerow([
+                    wav_id,                    # id (relative path from wav folder)
+                    text,                       # text
+                    str(wav_path.relative_to(wav_dir)),  # audio_file (relative from wav folder)
+                    speaker_info['speaker_id'],   # speaker_id
+                    speaker_info['age'],          # age
+                    speaker_info['gender'],        # gender
+                    status                       # validation status
+                ])
 
             print(wav_path)
         except Exception:
