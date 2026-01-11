@@ -1,0 +1,284 @@
+{% extends "admin/base.html" %}
+
+{% block header %}Manage Recordings{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-database me-2"></i>Manage Recordings</h5>
+                    <div>
+                        <button class="btn btn-sm btn-outline-primary" onclick="refreshData()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Filters -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <label for="userFilter" class="form-label">Filter by User</label>
+                            <select id="userFilter" class="form-select">
+                                <option value="">All Users</option>
+                                {% for user in users %}
+                                <option value="{{ user.id }}">{{ user.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="languageFilter" class="form-label">Filter by Language</label>
+                            <select id="languageFilter" class="form-select">
+                                <option value="">All Languages</option>
+                                {% for lang in languages %}
+                                <option value="{{ lang }}">{{ lang }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="statusFilter" class="form-label">Filter by Status</label>
+                            <select id="statusFilter" class="form-select">
+                                <option value="">All Status</option>
+                                <option value="pending">Pending</option>
+                                <option value="approved">Approved</option>
+                                <option value="rejected">Rejected</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <button class="btn btn-danger w-100" onclick="deleteFilteredRecordings()">
+                                <i class="fas fa-trash"></i> Delete Filtered
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Statistics -->
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                <strong>Total Recordings:</strong> {{ total_recordings }}
+                                <strong>Filtered:</strong> <span id="filteredCount">{{ total_recordings }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recordings Table -->
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover" id="recordingsTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th><input type="checkbox" id="selectAll" onchange="toggleAll()"></th>
+                                    <th>ID</th>
+                                    <th>User</th>
+                                    <th>Language</th>
+                                    <th>Prompt</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Duration</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for recording in recordings %}
+                                <tr class="{% if recording.status == 'approved' %}table-success{% elif recording.status == 'rejected' %}table-danger{% else %}table-warning{% endif %}">
+                                    <td>
+                                        <input type="checkbox" class="record-checkbox" value="{{ recording.id }}">
+                                    </td>
+                                    <td>{{ recording.id }}</td>
+                                    <td>{{ recording.username }}</td>
+                                    <td>{{ recording.language_name or recording.language }}</td>
+                                    <td>
+                                        <span title="{{ recording.prompt_text }}">
+                                            {{ recording.prompt_text[:50] }}{% if recording.prompt_text|length > 50 %}...{% endif %}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ recording.status == 'approved' and 'success' or recording.status == 'rejected' and 'danger' or 'warning' }}">
+                                            {{ recording.status|title }}
+                                        </span>
+                                    </td>
+                                    <td>{{ recording.submitted_date.strftime('%Y-%m-%d') if recording.submitted_date else '' }}</td>
+                                    <td>{{ recording.duration or 'N/A' }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteRecording({{ recording.id }})">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Bulk Actions -->
+                    <div class="row mt-4">
+                        <div class="col-md-12">
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-warning" onclick="deleteSelected()">
+                                    <i class="fas fa-trash"></i> Delete Selected
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="clearFilters()">
+                                    <i class="fas fa-times"></i> Clear Filters
+                                </button>
+                                <span class="ms-auto">
+                                    <small class="text-muted">
+                                        <span id="selectedCount">0</span> recordings selected
+                                    </small>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function refreshData() {
+    window.location.reload();
+}
+
+function clearFilters() {
+    document.getElementById('userFilter').value = '';
+    document.getElementById('languageFilter').value = '';
+    document.getElementById('statusFilter').value = '';
+    applyFilters();
+}
+
+function applyFilters() {
+    const userFilter = document.getElementById('userFilter').value;
+    const languageFilter = document.getElementById('languageFilter').value;
+    const statusFilter = document.getElementById('statusFilter').value;
+    
+    const rows = document.querySelectorAll('#recordingsTable tbody tr');
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        const show = (!userFilter || row.cells[2].textContent.includes(userFilter)) &&
+                    (!languageFilter || row.cells[3].textContent.includes(languageFilter)) &&
+                    (!statusFilter || row.cells[5].textContent.includes(statusFilter));
+        
+        row.style.display = show ? '' : 'none';
+        if (show) visibleCount++;
+    });
+    
+    document.getElementById('filteredCount').textContent = visibleCount;
+    updateSelectedCount();
+}
+
+function toggleAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.record-checkbox');
+    checkboxes.forEach(cb => cb.checked = selectAll.checked);
+    updateSelectedCount();
+}
+
+function updateSelectedCount() {
+    const checkboxes = document.querySelectorAll('.record-checkbox:checked');
+    document.getElementById('selectedCount').textContent = checkboxes.length;
+}
+
+function deleteRecording(id) {
+    if (confirm('Are you sure you want to delete this recording?')) {
+        fetch(`/admin/delete-recording/${id}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting recording');
+        });
+    }
+}
+
+function deleteSelected() {
+    const checkboxes = document.querySelectorAll('.record-checkbox:checked');
+    if (checkboxes.length === 0) {
+        alert('Please select recordings to delete');
+        return;
+    }
+    
+    if (confirm(`Are you sure you want to delete ${checkboxes.length} recording(s)?`)) {
+        const ids = Array.from(checkboxes).map(cb => cb.value);
+        
+        fetch('/admin/delete-recordings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({ ids: ids })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting recordings');
+        });
+    }
+}
+
+function deleteFilteredRecordings() {
+    const userFilter = document.getElementById('userFilter').value;
+    const languageFilter = document.getElementById('languageFilter').value;
+    const statusFilter = document.getElementById('statusFilter').value;
+    
+    let message = 'Delete all recordings matching current filters?';
+    if (userFilter) message += `\nUser: ${userFilter}`;
+    if (languageFilter) message += `\nLanguage: ${languageFilter}`;
+    if (statusFilter) message += `\nStatus: ${statusFilter}`;
+    
+    if (confirm(message)) {
+        fetch('/admin/delete-filtered-recordings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({
+                user_id: userFilter || null,
+                language: languageFilter || null,
+                status: statusFilter || null
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting recordings');
+        });
+    }
+}
+
+// Auto-apply filters when they change
+document.getElementById('userFilter').addEventListener('change', applyFilters);
+document.getElementById('languageFilter').addEventListener('change', applyFilters);
+document.getElementById('statusFilter').addEventListener('change', applyFilters);
+</script>
+{% endblock %}

@@ -1,7 +1,0 @@
-crestai0001	Record the information on the consent log and their signature of thumb print to indicate consent.
-crestai0002	We are requesting your consent to participate in an interview on livestock and animal health.
-crestai0003	The objective of our research is to develop better methods for animal disease control.
-crestai0004	The purpose of this interview is to understand the animal health challenges your community is facing. This will help us understand how animal health programs can be improved and made more accessible to communities.
-crestai0005	The interview will last approximately one to one and half hours and there is no payment or other compensation for your participation in the interview.
-crestai0006	Participation in the interview is voluntary.
-crestai0007	Your agreement to participate is limited to this interview and does not mean that you are committing to participate in any other part of the project.
