@@ -34,6 +34,7 @@ def load_prompts(prompts_dirs: List[Path]) -> Tuple[Dict[str, List[Prompt]], Dic
                 # Only process Ateker languages
                 if code in ateker_codes:
                     languages[name] = code
+                    # Load prompts if they exist
                     for prompt_path in language_dir.glob("*.txt"):
                         _LOGGER.debug("Loading prompts from %s", prompt_path)
                         prompt_group = prompt_path.stem
